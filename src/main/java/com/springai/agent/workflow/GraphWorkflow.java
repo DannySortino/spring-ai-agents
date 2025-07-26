@@ -467,7 +467,8 @@ public class GraphWorkflow implements Workflow {
                     Pattern pattern = Pattern.compile(condition.getValue());
                     return pattern.matcher(fieldValue).matches();
                 } catch (Exception e) {
-                    // Invalid regex, return false
+                    // Log the exception and return false for invalid regex
+                    logger.warning("Invalid regex pattern: " + condition.getValue() + ". Exception: " + e.getMessage());
                     return false;
                 }
                 
