@@ -66,7 +66,8 @@ public class GraphWorkflow implements Workflow {
         this.chatModel = chatModel;
         this.steps = steps != null ? steps : List.of();
         this.mcpToolService = mcpToolService;
-        this.executorService = Executors.newCachedThreadPool();
+        int threadPoolSize = Runtime.getRuntime().availableProcessors(); // Adjust size as needed
+        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
         
         // Build graph structures
         this.nodeMap = new HashMap<>();
