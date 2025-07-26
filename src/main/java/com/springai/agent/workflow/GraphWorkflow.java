@@ -62,6 +62,9 @@ public class GraphWorkflow implements Workflow {
     private final Map<String, List<String>> adjacencyList;
     private final Map<String, Set<String>> dependencyMap;
     
+    // Cache for compiled regex patterns
+    private final Map<String, Pattern> regexCache = new ConcurrentHashMap<>();
+    
     public GraphWorkflow(ChatModel chatModel, List<WorkflowStepDef> steps, McpToolService mcpToolService) {
         this.chatModel = chatModel;
         this.steps = steps != null ? steps : List.of();
@@ -467,8 +470,8 @@ public class GraphWorkflow implements Workflow {
                     Pattern pattern = regexCache.computeIfAbsent(condition.getValue(), Pattern::compile);
                     return pattern.matcher(fieldValue).matches();
                 } catch (Exception e) {
-                    // Log the exception and return false for invalid regex
-                    logger.warning("Invalid regex pattern: " + condition.getValue() + ". Exception: " + e.getMessage());
+                    // Print the exception and return false for invalid regex
+                    System.out.println("Invalid regex pattern: " + condition.getValue() + ". Exception: " + e.getMessage());
                     return false;
                 }
                 
