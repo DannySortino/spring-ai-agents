@@ -1,0 +1,86 @@
+{
+  "mcpServers": {
+    "billingAgent": {
+      "command": "curl",
+      "args": [
+        "-X", "POST",
+        "-H", "Content-Type: application/json",
+        "-H", "Accept: text/event-stream",
+        "http://localhost:8086/api/agents/billingAgent/mcp"
+      ],
+      "env": {
+        "MCP_SERVER_URL": "http://localhost:8086",
+        "MCP_BASE_PATH": "/api/agents/billingAgent/mcp"
+      }
+    }
+  },
+  "servers": {
+    "billingAgent": {
+      "url": "http://localhost:8086/api/agents/billingAgent/mcp",
+      "transport": {
+        "type": "sse",
+        "endpoint": "/api/agents/billingAgent/mcp/sse",
+        "messageEndpoint": "/api/agents/billingAgent/mcp/message"
+      },
+      "description": "Billing expert agent MCP server with routing capabilities",
+      "capabilities": [
+        "tools",
+        "prompts",
+        "resources",
+        "routing"
+      ],
+      "tools": [
+        {
+          "name": "invoiceTool",
+          "description": "Fetch invoice details with comprehensive information",
+          "parameters": {
+            "invoiceId": {
+              "type": "string",
+              "description": "Invoice ID to retrieve"
+            }
+          }
+        },
+        {
+          "name": "disputeTool", 
+          "description": "Initiate dispute process for transactions",
+          "parameters": {
+            "transactionId": {
+              "type": "string",
+              "description": "Transaction ID to dispute"
+            }
+          }
+        },
+        {
+          "name": "paymentTool",
+          "description": "Process payments with security protocols",
+          "parameters": {
+            "amount": {
+              "type": "number",
+              "description": "Payment amount"
+            },
+            "paymentMethod": {
+              "type": "string",
+              "description": "Payment method to use"
+            }
+          }
+        }
+      ],
+      "routes": [
+        "invoice",
+        "dispute", 
+        "payment"
+      ],
+      "timeout": 30000,
+      "retries": 3
+    }
+  },
+  "client": {
+    "name": "SpringAI-Billing-MCP-Client",
+    "version": "1.0.0",
+    "capabilities": [
+      "sampling",
+      "notifications",
+      "tool_calling"
+    ]
+  }
+}

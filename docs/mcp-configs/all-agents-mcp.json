@@ -1,0 +1,92 @@
+{
+  "mcpServers": {
+    "springAiMcp": {
+      "command": "python3",
+      "args": [
+        "-c",
+        "import json; import requests; import time; session = requests.Session(); session.headers.update({'Accept': 'text/event-stream', 'Content-Type': 'application/json'}); response = session.get('http://localhost:8086/sse', stream=True); init_msg = {'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {'protocolVersion': '2024-11-05', 'capabilities': {'tools': {}, 'prompts': {}, 'resources': {}}, 'clientInfo': {'name': 'SpringAI-MCP-Client', 'version': '1.0.0'}}}; print('MCP Client initialized')"
+      ],
+      "env": {
+        "PYTHONPATH": "."
+      }
+    }
+  },
+  "servers": {
+    "springAiMcp": {
+      "url": "http://localhost:8086/sse",
+      "transport": {
+        "type": "sse",
+        "protocol": "mcp"
+      },
+      "description": "Spring AI MCP server with all agent tools",
+      "capabilities": [
+        "tools",
+        "prompts",
+        "resources"
+      ],
+      "tools": [
+        {
+          "name": "simpleAgent",
+          "description": "Simple assistant agent for general queries",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "input": {"type": "string", "description": "Input text for the agent"}
+            },
+            "required": ["input"]
+          }
+        },
+        {
+          "name": "billingAgent", 
+          "description": "Billing expert agent with routing capabilities",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "input": {"type": "string", "description": "Input text for the agent"}
+            },
+            "required": ["input"]
+          }
+        },
+        {
+          "name": "complexAgent",
+          "description": "Complex analysis agent with parallel processing",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "input": {"type": "string", "description": "Input text for the agent"}
+            },
+            "required": ["input"]
+          }
+        }
+      ],
+      "timeout": 30000,
+      "retries": 3,
+      "connectionTimeout": 10000,
+      "keepAlive": true,
+      "protocol": {
+        "version": "2024-11-05",
+        "handshake": true,
+        "messageFormat": "json-rpc"
+      }
+    }
+  },
+  "client": {
+    "name": "SpringAI-All-Agents-MCP-Client",
+    "version": "1.0.0",
+    "capabilities": [
+      "sampling",
+      "notifications",
+      "tool_calling"
+    ],
+    "protocol": {
+      "version": "2024-11-05",
+      "features": [
+        "initialize",
+        "tools/list",
+        "tools/call",
+        "prompts/list",
+        "resources/list"
+      ]
+    }
+  }
+}

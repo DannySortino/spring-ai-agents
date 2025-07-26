@@ -1,0 +1,75 @@
+{
+  "mcpServers": {
+    "complexAgent": {
+      "command": "curl",
+      "args": [
+        "-X", "POST",
+        "-H", "Content-Type: application/json",
+        "-H", "Accept: text/event-stream",
+        "http://localhost:8086/api/agents/complexAgent/mcp"
+      ],
+      "env": {
+        "MCP_SERVER_URL": "http://localhost:8086",
+        "MCP_BASE_PATH": "/api/agents/complexAgent/mcp"
+      }
+    }
+  },
+  "servers": {
+    "complexAgent": {
+      "url": "http://localhost:8086/api/agents/complexAgent/mcp",
+      "transport": {
+        "type": "sse",
+        "endpoint": "/api/agents/complexAgent/mcp/sse",
+        "messageEndpoint": "/api/agents/complexAgent/mcp/message"
+      },
+      "description": "Complex analysis agent MCP server with parallel processing",
+      "capabilities": [
+        "tools",
+        "prompts",
+        "resources",
+        "parallel_processing",
+        "analysis"
+      ],
+      "workflows": {
+        "parallel": {
+          "type": "parallel",
+          "tasks": [
+            {
+              "name": "testTask",
+              "description": "Simple test processing task",
+              "workflow": {
+                "type": "chain",
+                "steps": [
+                  "Simple test prompt: {input}"
+                ]
+              }
+            }
+          ],
+          "aggregator": "Combine results: {results}"
+        }
+      },
+      "features": [
+        "multifunctional_analysis",
+        "complex_reporting",
+        "parallel_task_execution",
+        "result_aggregation"
+      ],
+      "timeout": 45000,
+      "retries": 3,
+      "concurrency": {
+        "maxParallelTasks": 10,
+        "taskTimeout": 30000
+      }
+    }
+  },
+  "client": {
+    "name": "SpringAI-Complex-MCP-Client",
+    "version": "1.0.0",
+    "capabilities": [
+      "sampling",
+      "notifications",
+      "parallel_execution",
+      "workflow_management"
+    ]
+  }
+}

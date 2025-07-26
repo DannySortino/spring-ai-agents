@@ -1,0 +1,267 @@
+# =============================================================================
+# Production Application Configuration Example
+# =============================================================================
+# This configuration is optimized for production environments with enterprise
+# features, security, performance optimization, and robust error handling.
+
+spring:
+  application:
+    name: spring-ai-agent-platform-prod
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4-turbo
+          temperature: 0.3  # Lower temperature for more consistent responses
+          max-tokens: 2048
+          timeout: 60s
+    # Production MCP Configuration
+    mcp:
+      server:
+        enabled: true
+        base-url: /api/v2/agents/mcp
+        sse-endpoint: /sse
+        sse-message-endpoint: /message
+      client:
+        enabled: true
+        name: productionToolsClient
+        type: SYNC
+        sse:
+          connections:
+            primaryDataServer:
+              url: https://data-server.company.com:8443
+              sse-endpoint: /mcp/sse
+              message-endpoint: /mcp/message
+            analyticsServer:
+              url: https://analytics.company.com:8443
+              sse-endpoint: /mcp/sse
+              message-endpoint: /mcp/message
+            complianceServer:
+              url: https://compliance.company.com:8443
+              sse-endpoint: /mcp/sse
+              message-endpoint: /mcp/message
+        request-timeout: 60s
+
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEYSTORE_PATH:classpath:keystore.p12}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD}
+    key-store-type: PKCS12
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+
+# Production logging configuration
+logging:
+  level:
+    org.example: INFO
+    org.springframework.ai: WARN
+    org.springframework.ai.mcp: INFO
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/spring-ai-agent/application.log
+    max-size: 100MB
+    max-history: 30
+
+# Production management and monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Production agent configurations
+app:
+  agents:
+    # Enterprise billing agent with comprehensive workflow
+    - name: enterpriseBillingAgent
+      model: openai
+      system-prompt: |
+        You are an enterprise-grade billing specialist with advanced capabilities.
+        Handle complex billing scenarios, enterprise contracts, and multi-currency transactions.
+        Ensure compliance with international financial regulations and maintain audit trails.
+      workflow:
+        type: orchestrator
+        manager-prompt: |
+          Enterprise billing request analysis: {input}
+          
+          Evaluate complexity, compliance requirements, and processing priority.
+          Determine optimal worker assignment for maximum efficiency and accuracy.
+        workers:
+          - name: complianceWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Review compliance requirements for: {input}"
+                - tool: "complianceTool"
+                - prompt: "Validate against current regulations and generate compliance report"
+          - name: calculationWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform detailed billing calculations for: {input}"
+                - tool: "billingCalculatorTool"
+                - prompt: "Apply taxes, discounts, and currency conversions with audit trail"
+          - name: auditWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Audit the billing process for: {input}"
+                - tool: "auditTool"
+                - prompt: "Generate comprehensive audit documentation"
+        synthesizer-prompt: |
+          Enterprise Billing Decision Synthesis
+          
+          Manager Assessment: {managerDecision}
+          Worker Results: {workerResults}
+          
+          Generate comprehensive billing response with:
+          1. Executive Summary
+          2. Compliance Certification
+          3. Detailed Calculations
+          4. Audit Trail
+          5. Risk Assessment
+
+    # Production analytics agent with parallel processing
+    - name: productionAnalyticsAgent
+      model: openai
+      system-prompt: |
+        You are a production-grade analytics agent optimized for enterprise data processing.
+        Handle large-scale data analysis with focus on performance, accuracy, and scalability.
+      workflow:
+        type: parallel
+        tasks:
+          - name: dataValidationTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Validate data integrity and quality for: {input}"
+                - tool: "dataValidationTool"
+                - prompt: "Generate comprehensive data quality report"
+          - name: performanceAnalysisTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform high-performance analysis on: {input}"
+                - tool: "performanceAnalyticsTool"
+                - prompt: "Generate statistical insights and performance benchmarks"
+          - name: predictiveModelingTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Apply predictive modeling to: {input}"
+                - tool: "predictiveModelingTool"
+                - prompt: "Generate forecasts with confidence intervals"
+          - name: riskAssessmentTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Assess risks related to: {input}"
+                - tool: "riskAssessmentTool"
+                - prompt: "Provide risk mitigation strategies"
+        aggregator: |
+          Enterprise Analytics Synthesis: {results}
+          
+          Create comprehensive analytics report including:
+          1. Executive Dashboard
+          2. Data Quality Assessment
+          3. Performance Analysis
+          4. Predictive Insights
+          5. Risk Assessment
+          6. Strategic Recommendations
+          7. Implementation Roadmap
+
+    # Production support agent with intelligent routing
+    - name: productionSupportAgent
+      model: openai
+      system-prompt: |
+        You are a production support specialist handling critical system issues.
+        Prioritize system stability, provide rapid incident resolution, and maintain SLA compliance.
+      workflow:
+        type: routing
+        routes:
+          critical:
+            prompt: "Handle critical incident: {input}. Initiate emergency protocols and escalation procedures."
+            tool: emergencyResponseTool
+          performance:
+            prompt: "Investigate performance issue: {input}. Analyze system metrics and identify bottlenecks."
+            tool: performanceAnalysisTool
+          security:
+            prompt: "Address security concern: {input}. Implement security protocols and threat mitigation."
+            tool: securityAnalysisTool
+          maintenance:
+            prompt: "Schedule maintenance for: {input}. Coordinate with stakeholders and minimize downtime."
+            tool: maintenanceSchedulerTool
+          monitoring:
+            prompt: "Configure monitoring for: {input}. Set up alerts and performance thresholds."
+            tool: monitoringConfigTool
+      mcp-server:
+        enabled: true
+        port: 8444
+        description: "Production support agent with incident management capabilities"
+        base-url: "/api/v2/agents/productionSupportAgent/mcp"
+        version: "2.0.0"
+
+    # Enterprise customer service agent
+    - name: enterpriseCustomerAgent
+      model: openai
+      system-prompt: |
+        You are an enterprise customer service specialist with access to comprehensive
+        customer data and business tools. Provide exceptional service while maintaining
+        data privacy and security compliance.
+      workflow:
+        type: orchestrator
+        manager-prompt: |
+          Customer service request analysis: {input}
+          
+          Evaluate customer tier, request complexity, and service level requirements.
+          Coordinate appropriate specialists for optimal customer experience.
+        workers:
+          - name: accountSpecialist
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Review customer account details for: {input}"
+                - tool: "customerAccountTool"
+                - prompt: "Provide account-specific recommendations"
+          - name: technicalSpecialist
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Analyze technical aspects of: {input}"
+                - tool: "technicalSupportTool"
+                - prompt: "Provide technical solutions and guidance"
+          - name: billingSpecialist
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Handle billing aspects of: {input}"
+                - tool: "billingTool"
+                - prompt: "Resolve billing inquiries and provide explanations"
+        synthesizer-prompt: |
+          Enterprise Customer Service Response
+          
+          Manager Assessment: {managerDecision}
+          Specialist Results: {workerResults}
+          
+          Provide comprehensive customer service response with:
+          1. Immediate Resolution
+          2. Account Status Update
+          3. Technical Recommendations
+          4. Billing Clarifications
+          5. Follow-up Actions
+          6. Escalation Path (if needed)

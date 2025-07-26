@@ -1,0 +1,316 @@
+# =============================================================================
+# Spring AI Agent Platform - Workflow Configuration Examples
+# =============================================================================
+# This file contains comprehensive examples of all supported workflow types
+# and configuration options for the Spring AI Agent Platform.
+
+# =============================================================================
+# 1. CHAIN WORKFLOW EXAMPLES
+# =============================================================================
+# Chain workflows execute steps sequentially, passing output from one step to the next
+
+# Simple Chain Workflow - Basic sequential processing
+app:
+  agents:
+    - name: simpleChainAgent
+      model: openai
+      system-prompt: "You are a helpful assistant that processes requests step by step."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Analyze the request: {input}"
+          - prompt: "Provide a detailed response based on the analysis"
+
+---
+
+# Chain Workflow with Tool Integration
+app:
+  agents:
+    - name: toolChainAgent
+      model: openai
+      system-prompt: "You are a billing assistant with access to invoice tools."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Understanding billing request: {input}"
+          - tool: "invoiceTool"  # Call MCP tool
+          - prompt: "Based on the tool result, provide a comprehensive billing response"
+
+---
+
+# Advanced Chain Workflow - Multi-step processing
+app:
+  agents:
+    - name: advancedChainAgent
+      model: openai
+      system-prompt: "You are a research assistant that conducts thorough analysis."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Initial analysis of topic: {input}"
+          - prompt: "Identify key research areas from the analysis"
+          - prompt: "Gather relevant information for each research area"
+          - prompt: "Synthesize findings into a comprehensive report"
+
+# =============================================================================
+# 2. PARALLEL WORKFLOW EXAMPLES
+# =============================================================================
+# Parallel workflows execute multiple tasks simultaneously and aggregate results
+
+# Simple Parallel Workflow - Basic concurrent processing
+---
+app:
+  agents:
+    - name: simpleParallelAgent
+      model: openai
+      system-prompt: "You are an analysis agent that processes data from multiple angles."
+      workflow:
+        type: parallel
+        tasks:
+          - name: qualityCheck
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Check data quality for: {input}"
+          - name: performanceAnalysis
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Analyze performance metrics for: {input}"
+        aggregator: "Combine quality and performance results: {results}"
+
+---
+
+# Advanced Parallel Workflow - Complex multi-task processing
+app:
+  agents:
+    - name: advancedParallelAgent
+      model: openai
+      system-prompt: "You are a comprehensive analytics agent."
+      workflow:
+        type: parallel
+        tasks:
+          - name: dataValidation
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Validate data integrity for: {input}"
+                - prompt: "Generate data quality report"
+          - name: statisticalAnalysis
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform statistical analysis on: {input}"
+                - prompt: "Calculate key metrics and trends"
+          - name: riskAssessment
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Assess risks related to: {input}"
+                - prompt: "Provide risk mitigation recommendations"
+        aggregator: |
+          Synthesize all analysis results: {results}
+          
+          Create a comprehensive report including:
+          1. Data Quality Summary
+          2. Statistical Insights
+          3. Risk Assessment
+          4. Recommendations
+
+# =============================================================================
+# 3. ROUTING WORKFLOW EXAMPLES
+# =============================================================================
+# Routing workflows direct requests to different processing paths based on content
+
+# Simple Routing Workflow - Basic request routing
+---
+app:
+  agents:
+    - name: simpleRoutingAgent
+      model: openai
+      system-prompt: "You are a customer service agent that routes requests appropriately."
+      workflow:
+        type: routing
+        routes:
+          billing:
+            prompt: "Handle billing inquiry: {input}"
+          support:
+            prompt: "Provide technical support for: {input}"
+          general:
+            prompt: "Provide general assistance for: {input}"
+
+---
+
+# Routing Workflow with Tools - Advanced request routing with tool integration
+app:
+  agents:
+    - name: toolRoutingAgent
+      model: openai
+      system-prompt: "You are a specialized service agent with access to various tools."
+      workflow:
+        type: routing
+        routes:
+          invoice:
+            prompt: "Process invoice request: {input}"
+            tool: invoiceTool
+          payment:
+            prompt: "Handle payment processing: {input}"
+            tool: paymentTool
+          dispute:
+            prompt: "Manage dispute resolution: {input}"
+            tool: disputeTool
+          account:
+            prompt: "Provide account information: {input}"
+            tool: accountTool
+
+# =============================================================================
+# 4. ORCHESTRATOR WORKFLOW EXAMPLES
+# =============================================================================
+# Orchestrator workflows use a manager to coordinate multiple specialized workers
+
+# Simple Orchestrator Workflow - Basic manager-worker pattern
+---
+app:
+  agents:
+    - name: simpleOrchestratorAgent
+      model: openai
+      system-prompt: "You are a project manager that coordinates different specialists."
+      workflow:
+        type: orchestrator
+        manager-prompt: |
+          Analyze the request: {input}
+          Determine which workers should handle this task.
+        workers:
+          - name: researcher
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Research information about: {input}"
+          - name: analyst
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Analyze the data for: {input}"
+        synthesizer-prompt: |
+          Based on manager decision: {managerDecision}
+          And worker results: {workerResults}
+          
+          Provide a comprehensive response.
+
+---
+
+# Advanced Orchestrator Workflow - Complex enterprise processing
+app:
+  agents:
+    - name: enterpriseOrchestratorAgent
+      model: openai
+      system-prompt: "You are an enterprise operations manager coordinating complex workflows."
+      workflow:
+        type: orchestrator
+        manager-prompt: |
+          Enterprise request analysis: {input}
+          
+          Evaluate complexity, compliance requirements, and resource allocation.
+          Determine optimal worker assignment strategy.
+        workers:
+          - name: complianceWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Review compliance requirements for: {input}"
+                - prompt: "Validate against current regulations"
+                - prompt: "Generate compliance documentation"
+          - name: technicalWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform technical analysis of: {input}"
+                - prompt: "Identify technical requirements and constraints"
+                - prompt: "Recommend technical solutions"
+          - name: businessWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Analyze business impact of: {input}"
+                - prompt: "Evaluate cost-benefit considerations"
+                - prompt: "Provide business recommendations"
+        synthesizer-prompt: |
+          Enterprise Decision Synthesis
+          
+          Manager Assessment: {managerDecision}
+          Worker Contributions: {workerResults}
+          
+          Generate comprehensive enterprise response including:
+          1. Executive Summary
+          2. Compliance Status
+          3. Technical Recommendations
+          4. Business Impact Analysis
+          5. Implementation Roadmap
+
+# =============================================================================
+# 5. MIXED WORKFLOW EXAMPLES
+# =============================================================================
+# Examples showing combinations of different workflow types
+
+# Nested Workflows - Chain containing parallel processing
+---
+app:
+  agents:
+    - name: nestedWorkflowAgent
+      model: openai
+      system-prompt: "You are a comprehensive processing agent with nested capabilities."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Initial processing of: {input}"
+          - prompt: "Prepare for parallel analysis"
+          # Note: Nested workflows would be supported through nestedWorkflow property
+          - prompt: "Finalize results from parallel processing"
+
+# =============================================================================
+# 6. MCP TOOL INTEGRATION EXAMPLES
+# =============================================================================
+# Examples showing various MCP tool integrations
+
+# Multiple Tool Integration
+---
+app:
+  agents:
+    - name: multiToolAgent
+      model: openai
+      system-prompt: "You are a multi-functional agent with access to various tools."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Analyzing request: {input}"
+          - tool: "dataTool"
+          - prompt: "Processing data results"
+          - tool: "analyticsTool"
+          - prompt: "Generating final report based on all tool results"
+
+# =============================================================================
+# 7. AGENT WITH MCP SERVER CONFIGURATION
+# =============================================================================
+# Examples showing agents that also expose MCP servers
+
+---
+app:
+  agents:
+    - name: mcpServerAgent
+      model: openai
+      system-prompt: "You are an agent that also provides MCP server capabilities."
+      workflow:
+        type: routing
+        routes:
+          process:
+            prompt: "Process the request: {input}"
+          analyze:
+            prompt: "Analyze the data: {input}"
+      mcp-server:
+        enabled: true
+        port: 8090
+        description: "Multi-purpose agent MCP server"
+        base-url: "/api/agents/mcpServerAgent/mcp"
+        sse-endpoint: "/sse"
+        sse-message-endpoint: "/message"
+        version: "1.0.0"

@@ -1,0 +1,57 @@
+{
+  "mcpServers": {
+    "springAiMcp": {
+      "command": "node",
+      "args": [
+        "-e",
+        "const { Client } = require('@modelcontextprotocol/sdk/client/index.js'); const { SSEClientTransport } = require('@modelcontextprotocol/sdk/client/sse.js'); const transport = new SSEClientTransport(new URL('http://localhost:8086/sse')); const client = new Client({ name: 'SpringAI-MCP-Client', version: '1.0.0' }, { capabilities: { tools: {}, prompts: {}, resources: {} } }); client.connect(transport).then(() => console.log('Connected')).catch(console.error);"
+      ],
+      "env": {
+        "NODE_PATH": "./node_modules"
+      }
+    }
+  },
+  "servers": {
+    "springAiMcp": {
+      "url": "http://localhost:8086/sse",
+      "transport": {
+        "type": "sse",
+        "protocol": "mcp"
+      },
+      "description": "Spring AI MCP server with agent tools",
+      "capabilities": [
+        "tools",
+        "prompts", 
+        "resources"
+      ],
+      "timeout": 30000,
+      "retries": 3,
+      "connectionTimeout": 10000,
+      "keepAlive": true,
+      "protocol": {
+        "version": "2024-11-05",
+        "handshake": true,
+        "messageFormat": "json-rpc"
+      }
+    }
+  },
+  "client": {
+    "name": "SpringAI-MCP-Client",
+    "version": "1.0.0",
+    "capabilities": [
+      "sampling",
+      "notifications",
+      "tool_calling"
+    ],
+    "protocol": {
+      "version": "2024-11-05",
+      "features": [
+        "initialize",
+        "tools/list",
+        "tools/call",
+        "prompts/list",
+        "resources/list"
+      ]
+    }
+  }
+}

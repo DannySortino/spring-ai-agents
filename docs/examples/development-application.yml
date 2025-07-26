@@ -1,0 +1,149 @@
+# =============================================================================
+# Development Application Configuration Example
+# =============================================================================
+# This configuration is optimized for development with MCP integration,
+# detailed logging, and testing features enabled.
+
+spring:
+  application:
+    name: spring-ai-agent-platform-dev
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your-dev-api-key}
+      chat:
+        options:
+          model: gpt-4
+          temperature: 0.7
+    # MCP Client Configuration for external tool integration
+    mcp:
+      server:
+        enabled: true
+        base-url: /api/agents/mcp
+        sse-endpoint: /sse
+        sse-message-endpoint: /message
+      client:
+        enabled: true
+        name: devToolsClient
+        type: SYNC
+        sse:
+          connections:
+            localDataServer:
+              url: http://localhost:8081
+              sse-endpoint: /mcp/sse
+              message-endpoint: /mcp/message
+            testingServer:
+              url: http://localhost:8082
+              sse-endpoint: /mcp/sse
+              message-endpoint: /mcp/message
+        request-timeout: 30s
+
+server:
+  port: 8080
+
+# Detailed logging for development
+logging:
+  level:
+    org.example: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.ai.mcp: TRACE
+    root: INFO
+
+# Development-focused agent configurations
+app:
+  agents:
+    # Development testing agent with tool integration
+    - name: devTestAgent
+      model: openai
+      system-prompt: "You are a development testing assistant with access to various tools."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Analyzing development request: {input}"
+          - tool: "dataTool"
+          - prompt: "Processing tool results and providing development insights"
+      mcp-server:
+        enabled: true
+        port: 8083
+        description: "Development testing agent MCP server"
+        base-url: "/api/agents/devTestAgent/mcp"
+
+    # Parallel processing agent for testing concurrent workflows
+    - name: parallelTestAgent
+      model: openai
+      system-prompt: "You are a parallel processing test agent."
+      workflow:
+        type: parallel
+        tasks:
+          - name: validationTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Validate input data: {input}"
+          - name: processingTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Process the data: {input}"
+          - name: analysisTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Analyze results for: {input}"
+        aggregator: "Development test results: {results}"
+
+    # Orchestrator agent for testing complex workflows
+    - name: orchestratorTestAgent
+      model: openai
+      system-prompt: "You are an orchestrator test agent for development."
+      workflow:
+        type: orchestrator
+        manager-prompt: |
+          Development workflow management for: {input}
+          Coordinate testing workers efficiently.
+        workers:
+          - name: unitTestWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform unit testing analysis: {input}"
+          - name: integrationTestWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform integration testing analysis: {input}"
+          - name: performanceTestWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Perform performance testing analysis: {input}"
+        synthesizer-prompt: |
+          Development Test Summary
+          Manager Decision: {managerDecision}
+          Worker Results: {workerResults}
+          
+          Provide comprehensive development testing report.
+
+    # Advanced routing agent with multiple tools
+    - name: advancedRoutingAgent
+      model: openai
+      system-prompt: "You are an advanced routing agent with comprehensive tool access."
+      workflow:
+        type: routing
+        routes:
+          data:
+            prompt: "Handle data request: {input}"
+            tool: dataTool
+          analytics:
+            prompt: "Perform analytics on: {input}"
+            tool: analyticsTool
+          testing:
+            prompt: "Execute testing for: {input}"
+            tool: testingTool
+          debugging:
+            prompt: "Debug the issue: {input}"
+            tool: debugTool
+      mcp-server:
+        enabled: true
+        port: 8084
+        description: "Advanced routing agent with debugging capabilities"
+        base-url: "/api/agents/advancedRoutingAgent/mcp"

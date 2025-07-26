@@ -1,0 +1,60 @@
+# =============================================================================
+# Basic Application Configuration Example
+# =============================================================================
+# This is a simple, minimal configuration for getting started with the
+# Spring AI Agent Platform. Perfect for development and learning.
+
+spring:
+  application:
+    name: spring-ai-agent-platform
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key-here}
+      chat:
+        options:
+          model: gpt-4
+          temperature: 0.7
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.example: DEBUG
+    org.springframework.ai: INFO
+
+# Simple agent configurations
+app:
+  agents:
+    # Basic conversational agent
+    - name: chatAgent
+      model: openai
+      system-prompt: "You are a helpful and friendly assistant."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Respond to: {input}"
+
+    # Simple task-oriented agent
+    - name: taskAgent
+      model: openai
+      system-prompt: "You are a task-oriented assistant that helps with specific requests."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Analyze the task: {input}"
+          - prompt: "Provide step-by-step instructions to complete the task"
+
+    # Basic routing agent for different types of requests
+    - name: routingAgent
+      model: openai
+      system-prompt: "You are a smart assistant that handles different types of requests."
+      workflow:
+        type: routing
+        routes:
+          question:
+            prompt: "Answer the question: {input}"
+          task:
+            prompt: "Help with the task: {input}"
+          general:
+            prompt: "Provide general assistance for: {input}"

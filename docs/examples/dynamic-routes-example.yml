@@ -1,0 +1,193 @@
+# Dynamic Route Discovery Examples
+# This file demonstrates how the dynamic route discovery works with any route names
+# The system will automatically discover routes from configuration without hardcoded values
+
+spring:
+  application:
+    name: dynamic-routes-example
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:local-api-key}
+      base-url: ${OPENAI_BASE_URL:http://localhost:1234/v1}
+
+app:
+  agents:
+    # Example 1: Standard billing routes (existing functionality)
+    - name: standardBillingAgent
+      model: openai
+      systemPrompt: "You are a billing specialist."
+      workflow:
+        type: ROUTING
+        routes:
+          invoice:
+            prompt: "Handle invoice request: {input}"
+            tool: invoiceTool
+          dispute:
+            prompt: "Handle dispute request: {input}"
+            tool: disputeTool
+          payment:
+            prompt: "Handle payment request: {input}"
+            tool: paymentTool
+
+    # Example 2: Custom route names (demonstrates dynamic discovery)
+    - name: customRoutingAgent
+      model: openai
+      systemPrompt: "You are a custom routing agent with unique route names."
+      workflow:
+        type: ROUTING
+        routes:
+          # These are completely custom route names - not hardcoded anywhere
+          customerService:
+            prompt: "Provide excellent customer service for: {input}"
+            tool: customerServiceTool
+          technicalSupport:
+            prompt: "Provide technical support for: {input}"
+            tool: techSupportTool
+          salesInquiry:
+            prompt: "Handle sales inquiry: {input}"
+            tool: salesTool
+          productInfo:
+            prompt: "Provide product information for: {input}"
+          generalHelp:
+            prompt: "Provide general assistance: {input}"
+
+    # Example 3: E-commerce specific routes
+    - name: ecommerceAgent
+      model: openai
+      systemPrompt: "You are an e-commerce specialist."
+      workflow:
+        type: ROUTING
+        routes:
+          orderTracking:
+            prompt: "Track order status: {input}"
+            tool: orderTrackingTool
+          returnRequest:
+            prompt: "Process return request: {input}"
+            tool: returnTool
+          productRecommendation:
+            prompt: "Recommend products based on: {input}"
+            tool: recommendationTool
+          inventoryCheck:
+            prompt: "Check inventory for: {input}"
+            tool: inventoryTool
+          shippingInfo:
+            prompt: "Provide shipping information: {input}"
+
+    # Example 4: Healthcare specific routes
+    - name: healthcareAgent
+      model: openai
+      systemPrompt: "You are a healthcare information assistant."
+      workflow:
+        type: ROUTING
+        routes:
+          appointmentScheduling:
+            prompt: "Help schedule appointment: {input}"
+            tool: schedulingTool
+          symptomChecker:
+            prompt: "Provide symptom information: {input}"
+            tool: symptomTool
+          medicationInfo:
+            prompt: "Provide medication information: {input}"
+            tool: medicationTool
+          insuranceVerification:
+            prompt: "Verify insurance coverage: {input}"
+            tool: insuranceTool
+
+    # Example 5: Mixed route types (some with tools, some without)
+    - name: mixedRoutingAgent
+      model: openai
+      systemPrompt: "You handle various types of requests."
+      workflow:
+        type: ROUTING
+        routes:
+          # Route with both prompt and tool
+          dataAnalysis:
+            prompt: "Analyze the data: {input}"
+            tool: analyticsTool
+          # Route with only prompt (no tool)
+          generalAdvice:
+            prompt: "Provide general advice for: {input}"
+          # Route with only tool (no prompt)
+          quickLookup:
+            tool: lookupTool
+          # Another mixed route
+          reportGeneration:
+            prompt: "Generate report for: {input}"
+            tool: reportTool
+
+    # Example 6: International/Localized routes
+    - name: internationalAgent
+      model: openai
+      systemPrompt: "You provide international support."
+      workflow:
+        type: ROUTING
+        routes:
+          # Routes with international naming
+          supportEnglish:
+            prompt: "Provide English support: {input}"
+            tool: englishSupportTool
+          supportSpanish:
+            prompt: "Proporcionar soporte en español: {input}"
+            tool: spanishSupportTool
+          supportFrench:
+            prompt: "Fournir un support en français: {input}"
+            tool: frenchSupportTool
+          currencyConversion:
+            prompt: "Convert currency: {input}"
+            tool: currencyTool
+          timeZoneHelp:
+            prompt: "Help with time zones: {input}"
+            tool: timeZoneTool
+
+    # Example 7: Complex nested route names
+    - name: complexNamingAgent
+      model: openai
+      systemPrompt: "You handle complex routing scenarios."
+      workflow:
+        type: ROUTING
+        routes:
+          # Routes with complex names (underscores, numbers, etc.)
+          user_account_management:
+            prompt: "Manage user account: {input}"
+            tool: accountTool
+          api_v2_integration:
+            prompt: "Handle API v2 integration: {input}"
+            tool: apiTool
+          database_query_optimization:
+            prompt: "Optimize database query: {input}"
+            tool: dbTool
+          real_time_monitoring:
+            prompt: "Monitor in real-time: {input}"
+            tool: monitoringTool
+          machine_learning_inference:
+            prompt: "Run ML inference: {input}"
+            tool: mlTool
+
+    # Example 8: Single route agent (edge case)
+    - name: singleRouteAgent
+      model: openai
+      systemPrompt: "You handle one specific type of request."
+      workflow:
+        type: ROUTING
+        routes:
+          specializedTask:
+            prompt: "Handle specialized task: {input}"
+            tool: specializedTool
+
+    # Example 9: Many routes agent (stress test)
+    - name: manyRoutesAgent
+      model: openai
+      systemPrompt: "You handle many different types of requests."
+      workflow:
+        type: ROUTING
+        routes:
+          route01: { prompt: "Handle route 01: {input}" }
+          route02: { prompt: "Handle route 02: {input}" }
+          route03: { prompt: "Handle route 03: {input}" }
+          route04: { prompt: "Handle route 04: {input}" }
+          route05: { prompt: "Handle route 05: {input}" }
+          route06: { prompt: "Handle route 06: {input}" }
+          route07: { prompt: "Handle route 07: {input}" }
+          route08: { prompt: "Handle route 08: {input}" }
+          route09: { prompt: "Handle route 09: {input}" }
+          route10: { prompt: "Handle route 10: {input}" }

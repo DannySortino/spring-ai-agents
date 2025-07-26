@@ -1,0 +1,363 @@
+# =============================================================================
+# Retry Configuration Examples
+# =============================================================================
+# This file demonstrates various retry configuration patterns and strategies
+# for different use cases and scenarios in the Spring AI Agent Platform.
+
+spring:
+  application:
+    name: retry-examples
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key}
+
+# =============================================================================
+# Example 1: Basic Retry Configuration
+# =============================================================================
+# Simple retry setup with default exponential backoff
+app:
+  # Application-wide default retry configuration
+  defaultRetry:
+    strategy: EXPONENTIAL
+    maxAttempts: 3
+    initialDelay: 1000
+    maxDelay: 10000
+    multiplier: 2.0
+    enabled: true
+
+  agents:
+    # Basic agent with default retry behavior
+    - name: basicRetryAgent
+      model: openai
+      system-prompt: "You are a basic agent with retry capabilities."
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Process request: {input}"
+          - tool: "externalAPI"  # This will use default retry
+          - prompt: "Provide response based on results"
+
+# =============================================================================
+# Example 2: Agent-Level Retry Override
+# =============================================================================
+    # Agent with custom retry configuration
+    - name: customRetryAgent
+      model: openai
+      system-prompt: "You are an agent with custom retry settings."
+      # Agent-level retry override
+      retry:
+        strategy: EXPONENTIAL_JITTER
+        maxAttempts: 5
+        initialDelay: 500
+        maxDelay: 30000
+        multiplier: 2.0
+        jitterFactor: 0.1
+        retryableExceptions:
+          - "RuntimeException"
+          - "IOException"
+          - "TimeoutException"
+        nonRetryableExceptions:
+          - "IllegalArgumentException"
+          - "SecurityException"
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Analyze request: {input}"
+          - tool: "unreliableService"  # Uses agent-level retry
+          - prompt: "Generate response from analysis"
+
+# =============================================================================
+# Example 3: Step-Level Retry Configuration
+# =============================================================================
+    # Agent with different retry strategies for different steps
+    - name: stepLevelRetryAgent
+      model: openai
+      system-prompt: "You are an agent with step-specific retry configurations."
+      workflow:
+        type: chain
+        chain:
+          # Critical step with aggressive retry
+          - prompt: "Initial validation: {input}"
+            retry:
+              strategy: EXPONENTIAL
+              maxAttempts: 7
+              initialDelay: 200
+              maxDelay: 15000
+              multiplier: 1.5
+          
+          # External API call with jitter to prevent thundering herd
+          - tool: "externalAPI"
+            retry:
+              strategy: EXPONENTIAL_JITTER
+              maxAttempts: 5
+              initialDelay: 1000
+              jitterFactor: 0.2
+              retryableExceptions:
+                - "ConnectException"
+                - "SocketTimeoutException"
+                - "HttpRetryException"
+          
+          # Final processing with linear backoff
+          - prompt: "Final processing: {input}"
+            retry:
+              strategy: LINEAR
+              maxAttempts: 3
+              initialDelay: 1000
+              increment: 500
+
+# =============================================================================
+# Example 4: Route-Level Retry Configuration
+# =============================================================================
+    # Routing agent with different retry strategies per route
+    - name: routeRetryAgent
+      model: openai
+      system-prompt: "You are a routing agent with route-specific retry configurations."
+      workflow:
+        type: routing
+        routes:
+          # Critical billing operations with aggressive retry
+          billing:
+            prompt: "Handle billing request: {input}"
+            tool: "billingService"
+            retry:
+              strategy: EXPONENTIAL_JITTER
+              maxAttempts: 7
+              initialDelay: 500
+              maxDelay: 60000
+              jitterFactor: 0.15
+              retryableExceptions:
+                - "PaymentException"
+                - "BillingServiceException"
+              nonRetryableExceptions:
+                - "InvalidAccountException"
+                - "InsufficientFundsException"
+          
+          # User queries with moderate retry
+          support:
+            prompt: "Handle support request: {input}"
+            tool: "supportService"
+            retry:
+              strategy: EXPONENTIAL
+              maxAttempts: 3
+              initialDelay: 1000
+              maxDelay: 10000
+          
+          # Analytics with no retry (fast fail for performance)
+          analytics:
+            prompt: "Generate analytics: {input}"
+            tool: "analyticsService"
+            retry:
+              strategy: NONE
+              maxAttempts: 1
+
+# =============================================================================
+# Example 5: Production-Ready Retry Configuration
+# =============================================================================
+    # Enterprise agent with comprehensive retry setup
+    - name: enterpriseAgent
+      model: openai
+      system-prompt: "You are an enterprise-grade agent with robust retry capabilities."
+      # Production-level retry configuration
+      retry:
+        strategy: EXPONENTIAL_JITTER
+        maxAttempts: 5
+        initialDelay: 1000
+        maxDelay: 30000
+        multiplier: 2.0
+        jitterFactor: 0.1
+        enabled: true
+        # Comprehensive exception handling
+        retryableExceptions:
+          - "RuntimeException"
+          - "IOException"
+          - "ConnectException"
+          - "SocketTimeoutException"
+          - "HttpRetryException"
+          - "ServiceUnavailableException"
+          - "TooManyRequestsException"
+        nonRetryableExceptions:
+          - "IllegalArgumentException"
+          - "SecurityException"
+          - "AuthenticationException"
+          - "AuthorizationException"
+          - "ValidationException"
+          - "BadRequestException"
+      workflow:
+        type: orchestrator
+        manager-prompt: "Coordinate enterprise workflow for: {input}"
+        workers:
+          - name: validationWorker
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Validate enterprise request: {input}"
+                  retry:
+                    strategy: FIXED_DELAY
+                    maxAttempts: 2
+                    initialDelay: 500
+          - name: processingWorker
+            workflow:
+              type: chain
+              chain:
+                - tool: "enterpriseService"
+                  retry:
+                    strategy: EXPONENTIAL_JITTER
+                    maxAttempts: 7
+                    initialDelay: 1000
+                    jitterFactor: 0.2
+        synthesizer-prompt: "Enterprise result: {managerDecision} | {workerResults}"
+
+# =============================================================================
+# Example 6: Different Retry Strategies Showcase
+# =============================================================================
+    # Agent demonstrating all retry strategies
+    - name: strategyShowcaseAgent
+      model: openai
+      system-prompt: "You demonstrate different retry strategies."
+      workflow:
+        type: parallel
+        tasks:
+          # No retry strategy
+          - name: noRetryTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Fast fail operation: {input}"
+                  retry:
+                    strategy: NONE
+                    maxAttempts: 1
+          
+          # Fixed delay strategy
+          - name: fixedDelayTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Fixed delay operation: {input}"
+                  retry:
+                    strategy: FIXED_DELAY
+                    maxAttempts: 3
+                    initialDelay: 2000
+          
+          # Linear backoff strategy
+          - name: linearTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Linear backoff operation: {input}"
+                  retry:
+                    strategy: LINEAR
+                    maxAttempts: 4
+                    initialDelay: 1000
+                    increment: 1000
+          
+          # Exponential backoff strategy
+          - name: exponentialTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Exponential backoff operation: {input}"
+                  retry:
+                    strategy: EXPONENTIAL
+                    maxAttempts: 5
+                    initialDelay: 500
+                    maxDelay: 16000
+                    multiplier: 2.0
+          
+          # Exponential with jitter strategy
+          - name: jitterTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Jitter backoff operation: {input}"
+                  retry:
+                    strategy: EXPONENTIAL_JITTER
+                    maxAttempts: 5
+                    initialDelay: 1000
+                    maxDelay: 30000
+                    multiplier: 2.0
+                    jitterFactor: 0.25
+          
+          # Custom strategy
+          - name: customTask
+            workflow:
+              type: chain
+              chain:
+                - prompt: "Custom strategy operation: {input}"
+                  retry:
+                    strategy: CUSTOM
+                    maxAttempts: 3
+                    customProperties:
+                      algorithm: "business-specific"
+                      backoffType: "adaptive"
+                      contextAware: true
+        
+        aggregator: "Strategy showcase results: {results}"
+
+# =============================================================================
+# Example 7: High-Availability Configuration
+# =============================================================================
+    # Agent optimized for high availability scenarios
+    - name: highAvailabilityAgent
+      model: openai
+      system-prompt: "You are a high-availability agent with maximum resilience."
+      # Aggressive retry for maximum uptime
+      retry:
+        strategy: EXPONENTIAL_JITTER
+        maxAttempts: 10
+        initialDelay: 100
+        maxDelay: 60000
+        multiplier: 1.5
+        jitterFactor: 0.3
+        enabled: true
+        retryableExceptions:
+          - "RuntimeException"
+          - "IOException"
+          - "ConnectException"
+          - "SocketTimeoutException"
+          - "ServiceUnavailableException"
+      workflow:
+        type: chain
+        chain:
+          - prompt: "High-availability processing: {input}"
+            retry:
+              strategy: EXPONENTIAL_JITTER
+              maxAttempts: 15
+              initialDelay: 50
+              jitterFactor: 0.4
+          - tool: "primaryService"
+            retry:
+              strategy: EXPONENTIAL_JITTER
+              maxAttempts: 12
+              initialDelay: 200
+              jitterFactor: 0.2
+          - tool: "backupService"
+            retry:
+              strategy: EXPONENTIAL
+              maxAttempts: 8
+              initialDelay: 500
+
+# =============================================================================
+# Example 8: Development/Testing Configuration
+# =============================================================================
+    # Agent with retry settings optimized for development
+    - name: developmentAgent
+      model: openai
+      system-prompt: "You are a development agent with fast-fail retry for quick feedback."
+      # Development-friendly retry (fast feedback)
+      retry:
+        strategy: FIXED_DELAY
+        maxAttempts: 2
+        initialDelay: 100
+        enabled: true
+      workflow:
+        type: chain
+        chain:
+          - prompt: "Development test: {input}"
+            retry:
+              strategy: FIXED_DELAY
+              maxAttempts: 1
+              initialDelay: 50
+          - tool: "mockService"
+            retry:
+              strategy: NONE
+              maxAttempts: 1

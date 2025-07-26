@@ -1,0 +1,162 @@
+spring:
+  application:
+    name: spring-ai-agent-platform
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:local-api-key}
+      base-url: ${OPENAI_BASE_URL:http://localhost:1234/v1}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:local-model}
+          temperature: 0.7
+    mcp:
+      server:
+        enabled: true
+        timeout: 30s
+        connection-timeout: 10s
+        max-connections: 100
+      client:
+        enabled: true
+        name: remoteToolsClient
+        type: SYNC
+        sse:
+          connections:
+            dataserver:
+              url: http://dataserver.local:8080
+              sse-endpoint: /mcp/sse
+              message-endpoint: /mcp/message
+        request-timeout: 30s
+
+server:
+  port: 8086
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.springai.agent: DEBUG
+    org.springframework.ai: DEBUG
+
+app:
+  agents:
+    - name: simpleAgent
+      model: openai
+      systemPrompt: "You are a helpful assistant."
+      workflow:
+        type: CHAIN
+        chain:
+          - prompt: "Answer the question: {input}"
+      mcpServer:
+        enabled: true
+        description: "Simple assistant agent MCP server"
+
+    - name: toolCallingAgent
+      model: openai
+      systemPrompt: "You are a billing specialist with access to various tools."
+      workflow:
+        type: CHAIN
+        chain:
+          - prompt: "Analyzing billing request: {input}"
+          - tool: "invoiceTool"
+          - prompt: "Based on the tool result, provide a comprehensive response"
+
+    - name: billingAgent
+      model: openai
+      systemPrompt: "You are a billing expert. Handle all billing requests with precision and care."
+      workflow:
+        type: ROUTING
+        routes:
+          invoice:
+            prompt: "Fetch invoice details for {invoiceId}. Provide comprehensive information including amount, date, status, and line items."
+            tool: invoiceTool
+          dispute:
+            prompt: "Initiate dispute process for transaction {transactionId}. Gather all necessary information and start the dispute workflow."
+            tool: disputeTool
+          payment:
+            prompt: "Process payment for {amount} using {paymentMethod}. Ensure all security protocols are followed."
+            tool: paymentTool
+      mcpServer:
+        enabled: true
+        description: "Billing expert agent MCP server with routing capabilities"
+
+    - name: complexAgent
+      model: openai
+      systemPrompt: "You are a multifunctional assistant capable of complex analysis and reporting."
+      workflow:
+        type: PARALLEL
+        tasks:
+          - name: testTask
+            workflow:
+              type: CHAIN
+              chain:
+                - prompt: "Simple test prompt: {input}"
+        aggregator: "Combine results: {results}"
+      mcpServer:
+        enabled: true
+        description: "Complex analysis agent MCP server with parallel processing"
+
+    - name: conditionalAgent
+      model: openai
+      systemPrompt: "You are an intelligent assistant with conditional logic capabilities."
+      workflow:
+        type: CHAIN
+        chain:
+          - prompt: "Analyzing request: {input}"
+          - conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "urgent"
+                ignoreCase: true
+              thenStep:
+                prompt: "This is an URGENT request. Prioritizing immediate response: {input}"
+              elseStep:
+                prompt: "Processing standard request: {input}"
+          - conditional:
+              condition:
+                type: CONTAINS
+                field: "previousResult"
+                value: "URGENT"
+              thenStep:
+                tool: "emergencyTool"
+              elseStep:
+                tool: "standardTool"
+      mcpServer:
+        enabled: true
+        description: "Conditional logic agent with if/then/else capabilities"
+
+    - name: smartRoutingAgent
+      model: openai
+      systemPrompt: "You are a smart routing assistant that makes decisions based on input content."
+      workflow:
+        type: CHAIN
+        chain:
+          - conditional:
+              condition:
+                type: REGEX
+                field: "input"
+                value: ".*invoice.*|.*bill.*|.*payment.*"
+              thenStep:
+                prompt: "Detected billing-related request. Routing to billing system: {input}"
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "support"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Detected support request. Routing to support system: {input}"
+                  elseStep:
+                    prompt: "General request detected. Processing normally: {input}"
+          - prompt: "Final processing: {input}"
+      mcpServer:
+        enabled: true
+        description: "Smart routing agent with nested conditional logic"
