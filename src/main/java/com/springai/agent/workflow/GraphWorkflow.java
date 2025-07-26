@@ -464,7 +464,7 @@ public class GraphWorkflow implements Workflow {
                 
             case REGEX:
                 try {
-                    Pattern pattern = Pattern.compile(condition.getValue());
+                    Pattern pattern = regexCache.computeIfAbsent(condition.getValue(), Pattern::compile);
                     return pattern.matcher(fieldValue).matches();
                 } catch (Exception e) {
                     // Log the exception and return false for invalid regex
