@@ -72,12 +72,21 @@ public class ChainWorkflow implements Workflow {
         String currentInput = input;
         boolean isFirstStep = true;
         
+        // Create a map to store step results by ID if it doesn't exist
+        if (!context.containsKey("stepResults")) {
+            context.put("stepResults", new java.util.HashMap<String, Object>());
+        }
+        Map<String, Object> stepResults = (Map<String, Object>) context.get("stepResults");
+        
         for (WorkflowStepDef step : steps) {
             // Store previous result for condition evaluation
             context.put("previousResult", currentInput);
             
             // Apply context management before step execution
             applyContextManagementBefore(step, context);
+            
+            // Process dependencies for this step
+            processDependencies(step, context);
             
             // Check if this is a conditional step
             if (step.getConditional() != null) {
@@ -111,6 +120,11 @@ public class ChainWorkflow implements Workflow {
             }
             // If neither tool, prompt, nor conditional is specified, skip this step
             
+            // Store the result of this step by its ID if an ID is provided
+            if (step.getId() != null && !step.getId().isEmpty()) {
+                stepResults.put(step.getId(), currentInput);
+            }
+            
             // Apply context management after step execution
             applyContextManagementAfter(step, context);
             
@@ -143,6 +157,9 @@ public class ChainWorkflow implements Workflow {
         // Apply context management before step execution
         applyContextManagementBefore(step, context);
         
+        // Process dependencies for this step
+        processDependencies(step, context);
+        
         String result;
         if (step.getConditional() != null) {
             // Recursive conditional step
@@ -171,6 +188,13 @@ public class ChainWorkflow implements Workflow {
         } else {
             // No valid step type, return input unchanged
             result = input;
+        }
+        
+        // Store the result of this step by its ID if an ID is provided
+        if (step.getId() != null && !step.getId().isEmpty()) {
+            Map<String, Object> stepResults = (Map<String, Object>) context.getOrDefault("stepResults", new java.util.HashMap<>());
+            stepResults.put(step.getId(), result);
+            context.put("stepResults", stepResults);
         }
         
         // Apply context management after step execution
@@ -229,12 +253,117 @@ public class ChainWorkflow implements Workflow {
         };
     }
     
+    /**
+     * Process dependencies for a workflow step
+     * 
+     * This method implements the data dependency management between workflow steps.
+     * It treats the workflow as a graph where nodes are tool calls and edges are data
+     * dependencies between them. The method:
+     * 
+     * 1. Checks if the step has any dependencies defined (edges pointing to this node)
+     * 2. Retrieves the results of those dependent steps from the context
+     * 3. Makes those results available to the current step in two ways:
+     *    a. Through result mappings: Maps dependency results to named variables in the context
+     *    b. Through a dependencyResults map: Makes all dependency results available in a map
+     * 
+     * This allows each step to access the results of its dependencies when executing,
+     * enabling complex workflows where steps depend on data from previous steps.
+     * 
+     * @param step The workflow step to process dependencies for
+     * @param context The context map to update with dependency results
+     */
+    private void processDependencies(WorkflowStepDef step, Map<String, Object> context) {
+        if (step == null) {
+            return;
+        }
+    
+        // Get the step results map from context
+        Map<String, Object> stepResults = (Map<String, Object>) context.getOrDefault("stepResults", new java.util.HashMap<>());
+    
+        // Process result mappings if defined
+        // This maps dependency results to named variables in the context
+        // Example: {"userInfo": "user-step", "billingInfo": "billing-step"}
+        if (step.getResultMapping() != null && !step.getResultMapping().isEmpty()) {
+            for (Map.Entry<String, String> mapping : step.getResultMapping().entrySet()) {
+                String variableName = mapping.getKey();
+                String dependencyId = mapping.getValue();
+            
+                // Get the result of the dependency step
+                Object dependencyResult = stepResults.get(dependencyId);
+                if (dependencyResult != null) {
+                    // Add the mapped result to the context with the specified variable name
+                    // This allows referencing the dependency result by a meaningful name
+                    context.put(variableName, dependencyResult);
+                }
+            }
+        }
+    
+        // Process direct dependencies if defined
+        // This makes all dependency results available in a dependencyResults map
+        if (step.getDependencies() != null && !step.getDependencies().isEmpty()) {
+            // Create a map to store dependency results
+            Map<String, Object> dependencyResults = new java.util.HashMap<>();
+        
+            for (String dependencyId : step.getDependencies()) {
+                Object dependencyResult = stepResults.get(dependencyId);
+                if (dependencyResult != null) {
+                    dependencyResults.put(dependencyId, dependencyResult);
+                }
+            }
+        
+            // Add all dependency results to the context
+            // This allows referencing all dependencies through the dependencyResults map
+            context.put("dependencyResults", dependencyResults);
+        }
+    }
+    
+    /**
+     * Process a prompt by replacing placeholders with values from input and context
+     * 
+     * This method supports the data dependency management by allowing prompts to reference:
+     * 1. The current input: {input}
+     * 2. Any context variable: {variableName}
+     * 3. Any step result by ID: {step.stepId}
+     * 4. Any dependency result: {dependency.dependencyId}
+     * 
+     * This enables complex workflows where prompts can incorporate results from previous steps,
+     * either through direct step references or through the dependency management system.
+     * 
+     * Examples:
+     * - "Analyze this user data: {input}"
+     * - "Summarize the user info: {userInfo} and billing info: {billingInfo}"
+     * - "Compare these results: {step.step1} vs {step.step2}"
+     * - "Process this dependency: {dependency.user-info-step}"
+     * 
+     * @param prompt The prompt template with placeholders
+     * @param input The current input to replace {input} placeholder
+     * @param context The context map containing variables and step results
+     * @return The processed prompt with all placeholders replaced
+     */
     private String processPrompt(String prompt, String input, Map<String, Object> context) {
+        // Replace {input} placeholder with the current input
         String processed = prompt.replace("{input}", input);
         
-        // Replace context variables
+        // Replace context variables: {variableName}
+        // This includes any variables added through result mappings
         for (Map.Entry<String, Object> entry : context.entrySet()) {
             processed = processed.replace("{" + entry.getKey() + "}", String.valueOf(entry.getValue()));
+        }
+        
+        // Replace step result references: {step.stepId}
+        // This allows directly referencing any step result by its ID
+        Map<String, Object> stepResults = (Map<String, Object>) context.getOrDefault("stepResults", new java.util.HashMap<>());
+        for (Map.Entry<String, Object> entry : stepResults.entrySet()) {
+            processed = processed.replace("{step." + entry.getKey() + "}", String.valueOf(entry.getValue()));
+        }
+        
+        // Replace dependency result references: {dependency.dependencyId}
+        // This allows referencing dependency results through the dependencyResults map
+        if (context.containsKey("dependencyResults")) {
+            Map<String, Object> dependencyResults = (Map<String, Object>) context.get("dependencyResults");
+            for (Map.Entry<String, Object> entry : dependencyResults.entrySet()) {
+                processed = processed.replace("{dependency." + entry.getKey() + "}", String.valueOf(entry.getValue()));
+            }
         }
         
         return processed;

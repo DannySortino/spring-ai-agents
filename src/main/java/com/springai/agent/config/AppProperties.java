@@ -93,20 +93,34 @@ public class AppProperties {
     @AllArgsConstructor
     @Builder
     public static class WorkflowStepDef {
+        private String id; // Unique identifier for this step
         private String prompt;
         private String tool; // MCP tool name to call
-        
+    
         @NestedConfigurationProperty
         private WorkflowDef nestedWorkflow; // Support for nested workflows in steps
-        
+    
         @NestedConfigurationProperty
         private ConditionalStepDef conditional; // Support for conditional logic
-        
+    
         @NestedConfigurationProperty
         private RetryDef retry; // Per-workflow-step retry override
-        
+    
         @NestedConfigurationProperty
         private ContextManagementDef contextManagement; // Context clearing configuration
+    
+        /**
+         * List of step IDs that this step depends on.
+         * The results from these steps will be available when executing this step.
+         */
+        private List<String> dependencies;
+    
+        /**
+         * Map of variable names to dependency step IDs.
+         * This allows referencing results from specific steps in the prompt or tool input.
+         * Example: {"userData": "user-info-step", "billingData": "billing-step"}
+         */
+        private Map<String, String> resultMapping;
     }
     
     @Data
