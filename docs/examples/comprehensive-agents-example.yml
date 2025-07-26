@@ -1,0 +1,251 @@
+# =============================================================================
+# Comprehensive Agent Examples Configuration
+# =============================================================================
+# This file contains comprehensive examples of different agent configurations
+# demonstrating various workflow patterns, MCP integration, and advanced features.
+# These examples were moved from the main application.yml to keep it minimal.
+
+spring:
+  application:
+    name: spring-ai-agent-platform
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key-here}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4}
+          temperature: 0.7
+    mcp:
+      server:
+        enabled: true
+        timeout: 30s
+        connection-timeout: 10s
+        max-connections: 100
+      client:
+        enabled: true
+        name: remoteToolsClient
+        type: SYNC
+        request-timeout: 30s
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.springai.agent: DEBUG
+    org.springframework.ai: DEBUG
+
+# Comprehensive agent examples demonstrating various patterns
+app:
+  agents:
+    # Simple conversational agent with basic graph workflow
+    - name: simpleAgent
+      model: openai
+      systemPrompt: "You are a helpful assistant."
+      workflow:
+        type: graph
+        chain:
+          - nodeId: "response"
+            prompt: "Answer the question: {input}"
+      mcpServer:
+        enabled: true
+        description: "Simple assistant agent MCP server"
+
+    # Tool-calling agent demonstrating sequential tool integration
+    - name: toolCallingAgent
+      model: openai
+      systemPrompt: "You are a billing specialist with access to various tools."
+      workflow:
+        type: graph
+        chain:
+          - nodeId: "analyze"
+            prompt: "Analyzing billing request: {input}"
+          - nodeId: "tool_call"
+            dependsOn: ["analyze"]
+            tool: "invoiceTool"
+          - nodeId: "response"
+            dependsOn: ["tool_call"]
+            prompt: "Based on the tool result: {tool_call}, provide a comprehensive response"
+
+    # Routing agent demonstrating content-based request routing using GraphWorkflow conditionals
+    - name: billingAgent
+      model: openai
+      systemPrompt: "You are a billing expert. Handle all billing requests with precision and care."
+      workflow:
+        type: graph
+        chain:
+          - nodeId: "billing_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "invoice"
+                ignoreCase: true
+              thenStep:
+                prompt: "Fetch invoice details for {invoiceId}. Provide comprehensive information including amount, date, status, and line items."
+                tool: invoiceTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "dispute"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Initiate dispute process for transaction {transactionId}. Gather all necessary information and start the dispute workflow."
+                    tool: disputeTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "payment"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Process payment for {amount} using {paymentMethod}. Ensure all security protocols are followed."
+                        tool: paymentTool
+                      elseStep:
+                        prompt: "General billing assistance: {input}. Please specify if you need help with invoices, disputes, or payments."
+      mcpServer:
+        enabled: true
+        description: "Billing expert agent MCP server with conditional routing capabilities"
+
+    # Complex agent demonstrating parallel processing with graph workflow
+    - name: complexAgent
+      model: openai
+      systemPrompt: "You are a multifunctional assistant capable of complex analysis and reporting."
+      workflow:
+        type: graph
+        chain:
+          # Independent parallel tasks
+          - nodeId: "task1"
+            prompt: "Perform analysis task 1: {input}"
+          - nodeId: "task2"
+            prompt: "Perform analysis task 2: {input}"
+          - nodeId: "task3"
+            prompt: "Perform analysis task 3: {input}"
+          # Aggregator that depends on all tasks
+          - nodeId: "aggregator"
+            dependsOn: ["task1", "task2", "task3"]
+            prompt: "Combine results from task1: {task1}, task2: {task2}, task3: {task3}"
+      mcpServer:
+        enabled: true
+        description: "Complex analysis agent MCP server with parallel processing"
+
+    # Conditional logic agent demonstrating advanced workflow patterns
+    - name: conditionalAgent
+      model: openai
+      systemPrompt: "You are an intelligent assistant with conditional logic capabilities."
+      workflow:
+        type: graph
+        chain:
+          - nodeId: "initial_analysis"
+            prompt: "Analyzing request: {input}"
+          - nodeId: "urgency_check"
+            dependsOn: ["initial_analysis"]
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "urgent"
+                ignoreCase: true
+              thenStep:
+                prompt: "This is an URGENT request. Prioritizing immediate response: {input}"
+              elseStep:
+                prompt: "Processing standard request: {input}"
+          - nodeId: "tool_selection"
+            dependsOn: ["urgency_check"]
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "urgency_check"
+                value: "URGENT"
+              thenStep:
+                tool: "emergencyTool"
+              elseStep:
+                tool: "standardTool"
+      mcpServer:
+        enabled: true
+        description: "Conditional logic agent with if/then/else capabilities"
+
+    # Smart routing agent with nested conditional logic
+    - name: smartRoutingAgent
+      model: openai
+      systemPrompt: "You are a smart routing assistant that makes decisions based on input content."
+      workflow:
+        type: graph
+        chain:
+          - nodeId: "content_analysis"
+            conditional:
+              condition:
+                type: REGEX
+                field: "input"
+                value: ".*invoice.*|.*bill.*|.*payment.*"
+              thenStep:
+                prompt: "Detected billing-related request. Routing to billing system: {input}"
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "support"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Detected support request. Routing to support system: {input}"
+                  elseStep:
+                    prompt: "General request detected. Processing normally: {input}"
+          - nodeId: "final_processing"
+            dependsOn: ["content_analysis"]
+            prompt: "Final processing based on routing decision: {content_analysis}"
+      mcpServer:
+        enabled: true
+        description: "Smart routing agent with nested conditional logic"
+
+    # Advanced graph workflow demonstrating complex dependencies
+    - name: advancedGraphAgent
+      model: openai
+      systemPrompt: "You are an advanced analysis agent with complex workflow dependencies."
+      workflow:
+        type: graph
+        chain:
+          # Root node
+          - nodeId: "data_extraction"
+            prompt: "Extract key data points from: {input}"
+          
+          # Parallel analysis branches
+          - nodeId: "statistical_analysis"
+            dependsOn: ["data_extraction"]
+            prompt: "Perform statistical analysis on: {data_extraction}"
+          
+          - nodeId: "trend_analysis"
+            dependsOn: ["data_extraction"]
+            prompt: "Identify trends in: {data_extraction}"
+          
+          - nodeId: "risk_assessment"
+            dependsOn: ["data_extraction"]
+            prompt: "Assess risks based on: {data_extraction}"
+          
+          # Synthesis nodes with multiple dependencies
+          - nodeId: "statistical_trends_synthesis"
+            dependsOn: ["statistical_analysis", "trend_analysis"]
+            prompt: "Synthesize statistical analysis: {statistical_analysis} with trends: {trend_analysis}"
+          
+          - nodeId: "comprehensive_report"
+            dependsOn: ["statistical_trends_synthesis", "risk_assessment"]
+            prompt: "Generate comprehensive report combining synthesis: {statistical_trends_synthesis} and risk assessment: {risk_assessment}"
+
+# MCP Tool Configuration Examples
+mcp:
+  servers:
+    invoice_tools:
+      command: "node"
+      args: ["invoice-mcp-server.js"]
+      env:
+        DATABASE_URL: "${DATABASE_URL}"
+    
+    emergency_tools:
+      command: "python"
+      args: ["-m", "emergency_mcp_server"]
+      env:
+        ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL}"

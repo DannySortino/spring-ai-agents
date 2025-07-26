@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * own workflow, system prompt, and persistent state. The service maintains
  * thread-safe context storage and automatically manages conversation history.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @RequiredArgsConstructor

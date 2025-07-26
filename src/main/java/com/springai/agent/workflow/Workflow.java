@@ -11,12 +11,13 @@ import java.util.Map;
  * or conditional routing.
  * 
  * Implementations include:
- * - ChainWorkflow: Sequential execution of workflow steps
- * - ParallelizationWorkflow: Parallel execution of multiple tasks
- * - OrchestratorWorkersWorkflow: Manager-worker pattern with synthesis
- * - RoutingWorkflow: Conditional routing based on input analysis
+ * - GraphWorkflow: Unified workflow engine supporting all execution patterns including:
+ *   - Graph-based execution with arbitrary dependencies and parallel processing
+ *   - Manager-worker orchestration pattern with synthesis
+ *   - Conditional routing based on input analysis
+ *   - Complex conditional logic with if/then/else branching
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 public interface Workflow {

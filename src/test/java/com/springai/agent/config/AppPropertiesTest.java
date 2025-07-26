@@ -18,10 +18,11 @@ import static org.junit.jupiter.api.Assertions.*;
     "app.agents[0].name=testAgent",
     "app.agents[0].model=openai",
     "app.agents[0].systemPrompt=Test prompt",
-    "app.agents[0].workflow.type=parallel",
+    "app.agents[0].workflow.type=graph",
     "app.agents[0].workflow.aggregator=Test aggregator",
     "app.agents[0].workflow.tasks[0].name=testTask",
-    "app.agents[0].workflow.tasks[0].workflow.type=chain",
+    "app.agents[0].workflow.tasks[0].workflow.type=graph",
+    "app.agents[0].workflow.tasks[0].workflow.chain[0].nodeId=test_node",
     "app.agents[0].workflow.tasks[0].workflow.chain[0].prompt=Test nested prompt"
 })
 class AppPropertiesTest {
@@ -50,7 +51,7 @@ class AppPropertiesTest {
 
         // Verify workflow is not null
         assertNotNull(agent.getWorkflow(), "Agent workflow should not be null");
-        assertEquals(WorkflowType.PARALLEL, agent.getWorkflow().getType());
+        assertEquals(WorkflowType.GRAPH, agent.getWorkflow().getType());
         assertEquals("Test aggregator", agent.getWorkflow().getAggregator());
 
         // Verify tasks are not null
@@ -62,7 +63,7 @@ class AppPropertiesTest {
 
         // This is the critical test - verify nested workflow is not null
         assertNotNull(task.getWorkflow(), "Task workflow should not be null - this is the main issue we're fixing");
-        assertEquals(WorkflowType.CHAIN, task.getWorkflow().getType());
+        assertEquals(WorkflowType.GRAPH, task.getWorkflow().getType());
         
         // Verify nested chain
         assertNotNull(task.getWorkflow().getChain());
@@ -76,7 +77,7 @@ class AppPropertiesTest {
         assertNotNull(appProperties);
         AppProperties.AgentDef agent = appProperties.getAgents().get(0);
         assertNotNull(agent.getWorkflow());
-        assertEquals(WorkflowType.PARALLEL, agent.getWorkflow().getType()); // Updated to match the test properties
+        assertEquals(WorkflowType.GRAPH, agent.getWorkflow().getType()); // Updated to match the test properties
         assertEquals("Test aggregator", agent.getWorkflow().getAggregator());
     }
 }

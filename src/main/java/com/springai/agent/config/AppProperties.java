@@ -24,7 +24,7 @@ import java.util.Map;
  * The configuration supports complex workflow types including chain, parallel,
  * orchestrator, and routing workflows with conditional logic and retry mechanisms.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @Data
@@ -95,6 +95,8 @@ public class AppProperties {
     public static class WorkflowStepDef {
         private String prompt;
         private String tool; // MCP tool name to call
+        private String nodeId; // Unique identifier for graph-based workflows
+        private List<String> dependsOn; // List of node IDs this step depends on
         
         @NestedConfigurationProperty
         private WorkflowDef nestedWorkflow; // Support for nested workflows in steps

@@ -1,0 +1,170 @@
+package com.springai.agent.workflow;
+
+import com.springai.agent.config.AppProperties.WorkflowStepDef;
+import org.junit.jupiter.api.Test;
+
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Test suite for GraphWorkflow implementation focusing on core validation functionality.
+ * 
+ * Tests cover:
+ * - Graph construction and validation
+ * - Cycle detection
+ * - Dependency validation
+ * - Error handling
+ */
+class GraphWorkflowTest {
+
+    @Test
+    void testGraphWorkflowCreation() {
+        // Given: Simple linear graph A -> B -> C
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process input: {input}", null),
+            createStep("B", "Analyze result: {A}", Arrays.asList("A")),
+            createStep("C", "Finalize: {B}", Arrays.asList("B"))
+        );
+
+        // When: Create GraphWorkflow
+        GraphWorkflow workflow = new GraphWorkflow(null, steps, null);
+        
+        // Then: Workflow should be created successfully
+        assertNotNull(workflow);
+    }
+
+    @Test
+    void testComplexDependencyPattern() {
+        // Given: A -> B, B -> C, A -> C (as specified in the issue)
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process A: {input}", null),
+            createStep("B", "Process B from A: {A}", Arrays.asList("A")),
+            createStep("C", "Process C from A and B: {A} and {B}", Arrays.asList("A", "B"))
+        );
+
+        // When: Create GraphWorkflow
+        GraphWorkflow workflow = new GraphWorkflow(null, steps, null);
+        
+        // Then: Workflow should be created successfully
+        assertNotNull(workflow);
+    }
+
+    @Test
+    void testCycleDetection() {
+        // Given: A -> B -> C -> A (creates a cycle)
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process A: {input} and {C}", Arrays.asList("C")),
+            createStep("B", "Process B: {A}", Arrays.asList("A")),
+            createStep("C", "Process C: {B}", Arrays.asList("B"))
+        );
+
+        // When/Then: Creating GraphWorkflow should throw exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            new GraphWorkflow(null, steps, null);
+        });
+    }
+
+    @Test
+    void testSelfCycleDetection() {
+        // Given: A -> A (self cycle)
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process A: {input} and {A}", Arrays.asList("A"))
+        );
+
+        // When/Then: Creating GraphWorkflow should throw exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            new GraphWorkflow(null, steps, null);
+        });
+    }
+
+    @Test
+    void testMissingNodeDependency() {
+        // Given: A depends on non-existent node B
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process A: {B}", Arrays.asList("B"))
+        );
+
+        // When/Then: Creating GraphWorkflow should throw exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            new GraphWorkflow(null, steps, null);
+        });
+    }
+
+    @Test
+    void testDuplicateNodeIds() {
+        // Given: Two nodes with same ID
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process A1: {input}", null),
+            createStep("A", "Process A2: {input}", null)
+        );
+
+        // When/Then: Creating GraphWorkflow should throw exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            new GraphWorkflow(null, steps, null);
+        });
+    }
+
+    @Test
+    void testMissingNodeId() {
+        // Given: Node without ID
+        WorkflowStepDef step = new WorkflowStepDef();
+        step.setPrompt("Process: {input}");
+        // nodeId is null
+        
+        List<WorkflowStepDef> steps = Arrays.asList(step);
+
+        // When/Then: Creating GraphWorkflow should throw exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            new GraphWorkflow(null, steps, null);
+        });
+    }
+
+    @Test
+    void testEmptyWorkflow() {
+        // Given: Empty workflow
+        GraphWorkflow workflow = new GraphWorkflow(null, Collections.emptyList(), null);
+        
+        // Then: Workflow should be created successfully
+        assertNotNull(workflow);
+    }
+
+    @Test
+    void testSingleNodeWorkflow() {
+        // Given: Single node workflow
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Process: {input}", null)
+        );
+
+        // When: Create GraphWorkflow
+        GraphWorkflow workflow = new GraphWorkflow(null, steps, null);
+        
+        // Then: Workflow should be created successfully
+        assertNotNull(workflow);
+    }
+
+    @Test
+    void testDiamondDependencyPattern() {
+        // Given: A -> B, A -> C, B -> D, C -> D (diamond pattern)
+        List<WorkflowStepDef> steps = Arrays.asList(
+            createStep("A", "Start: {input}", null),
+            createStep("B", "Branch B from A: {A}", Arrays.asList("A")),
+            createStep("C", "Branch C from A: {A}", Arrays.asList("A")),
+            createStep("D", "Merge B and C: {B} and {C}", Arrays.asList("B", "C"))
+        );
+
+        // When: Create GraphWorkflow
+        GraphWorkflow workflow = new GraphWorkflow(null, steps, null);
+        
+        // Then: Workflow should be created successfully
+        assertNotNull(workflow);
+    }
+
+    private WorkflowStepDef createStep(String nodeId, String prompt, List<String> dependsOn) {
+        WorkflowStepDef step = new WorkflowStepDef();
+        step.setNodeId(nodeId);
+        step.setPrompt(prompt);
+        step.setDependsOn(dependsOn);
+        return step;
+    }
+}

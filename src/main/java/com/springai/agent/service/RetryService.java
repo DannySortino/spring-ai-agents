@@ -35,7 +35,7 @@ import java.util.concurrent.Callable;
  * custom retry settings, allowing fine-grained control over retry behavior
  * across different parts of the application.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @Service

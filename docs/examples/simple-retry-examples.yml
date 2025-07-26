@@ -30,11 +30,16 @@ app:
       model: openai
       system-prompt: "You are a helpful assistant with retry capabilities."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Process: {input}"
-          - tool: "externalService"    # Uses default retry (3 attempts, exponential)
-          - prompt: "Respond based on results"
+          - nodeId: "process_input"
+            prompt: "Process: {input}"
+          - nodeId: "external_service_call"
+            dependsOn: ["process_input"]
+            tool: "externalService"    # Uses default retry (3 attempts, exponential)
+          - nodeId: "respond_results"
+            dependsOn: ["external_service_call"]
+            prompt: "Respond based on results"
 
 # =============================================================================
 # Example 2: Agent with Custom Retry Settings
@@ -50,11 +55,16 @@ app:
         initialDelay: 500            # Start with shorter delay
         jitterFactor: 0.1            # 10% randomization
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Analyze: {input}"
-          - tool: "criticalService"   # Uses agent retry (5 attempts, jitter)
-          - prompt: "Generate response"
+          - nodeId: "analyze_input"
+            prompt: "Analyze: {input}"
+          - nodeId: "critical_service_call"
+            dependsOn: ["analyze_input"]
+            tool: "criticalService"   # Uses agent retry (5 attempts, jitter)
+          - nodeId: "generate_response"
+            dependsOn: ["critical_service_call"]
+            prompt: "Generate response"
 
 # =============================================================================
 # Example 3: Different Retry for Different Steps
@@ -64,17 +74,20 @@ app:
       model: openai
       system-prompt: "You have different retry strategies for different steps."
       workflow:
-        type: chain
+        type: graph
         chain:
           # Quick validation step - fail fast
-          - prompt: "Validate input: {input}"
+          - nodeId: "validate_input"
+            prompt: "Validate input: {input}"
             retry:
               strategy: FIXED_DELAY
               maxAttempts: 2
               initialDelay: 500
           
           # External API call - more resilient
-          - tool: "externalAPI"
+          - nodeId: "external_api_call"
+            dependsOn: ["validate_input"]
+            tool: "externalAPI"
             retry:
               strategy: EXPONENTIAL
               maxAttempts: 5
@@ -82,7 +95,9 @@ app:
               maxDelay: 30000
           
           # Final processing - moderate retry
-          - prompt: "Final processing based on API results"
+          - nodeId: "final_processing"
+            dependsOn: ["external_api_call"]
+            prompt: "Final processing based on API results"
             retry:
               strategy: LINEAR
               maxAttempts: 3
@@ -97,34 +112,52 @@ app:
       model: openai
       system-prompt: "You route requests with appropriate retry strategies."
       workflow:
-        type: routing
-        routes:
-          # Critical operations need aggressive retry
-          payment:
-            prompt: "Process payment: {input}"
-            tool: "paymentService"
-            retry:
-              strategy: EXPONENTIAL_JITTER
-              maxAttempts: 7
-              initialDelay: 500
-              jitterFactor: 0.2
-          
-          # User queries need moderate retry
-          support:
-            prompt: "Handle support request: {input}"
-            tool: "supportService"
-            retry:
-              strategy: EXPONENTIAL
-              maxAttempts: 3
-              initialDelay: 1000
-          
-          # Analytics can fail fast for performance
-          analytics:
-            prompt: "Generate analytics: {input}"
-            tool: "analyticsService"
-            retry:
-              strategy: NONE
-              maxAttempts: 1
+        type: graph
+        chain:
+          - nodeId: "request_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "payment"
+                ignoreCase: true
+              thenStep:
+                prompt: "Process payment: {input}"
+                tool: "paymentService"
+                retry:
+                  strategy: EXPONENTIAL_JITTER
+                  maxAttempts: 7
+                  initialDelay: 500
+                  jitterFactor: 0.2
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "support"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Handle support request: {input}"
+                    tool: "supportService"
+                    retry:
+                      strategy: EXPONENTIAL
+                      maxAttempts: 3
+                      initialDelay: 1000
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "analytics"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Generate analytics: {input}"
+                        tool: "analyticsService"
+                        retry:
+                          strategy: NONE
+                          maxAttempts: 1
+                      elseStep:
+                        prompt: "General assistance for: {input}"
 
 # =============================================================================
 # Example 5: Exception-Based Retry Control
@@ -148,11 +181,16 @@ app:
           - "SecurityException"        # Security issues
           - "ValidationException"      # Validation failures
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Smart processing: {input}"
-          - tool: "smartService"
-          - prompt: "Generate intelligent response"
+          - nodeId: "smart_processing"
+            prompt: "Smart processing: {input}"
+          - nodeId: "smart_service_call"
+            dependsOn: ["smart_processing"]
+            tool: "smartService"
+          - nodeId: "intelligent_response"
+            dependsOn: ["smart_service_call"]
+            prompt: "Generate intelligent response"
 
 # =============================================================================
 # Example 6: Development vs Production Retry
@@ -166,10 +204,13 @@ app:
         maxAttempts: 2              # Quick feedback in development
         initialDelay: 100           # Very short delays
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Dev test: {input}"
-          - tool: "mockService"
+          - nodeId: "dev_test"
+            prompt: "Dev test: {input}"
+          - nodeId: "mock_service_call"
+            dependsOn: ["dev_test"]
+            tool: "mockService"
 
     # Robust configuration for production
     - name: prodAgent
@@ -182,10 +223,13 @@ app:
         maxDelay: 30000             # Cap at 30 seconds
         jitterFactor: 0.1           # Prevent thundering herd
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Production processing: {input}"
-          - tool: "productionService"
+          - nodeId: "production_processing"
+            prompt: "Production processing: {input}"
+          - nodeId: "production_service_call"
+            dependsOn: ["production_processing"]
+            tool: "productionService"
 
 # =============================================================================
 # Example 7: No Retry Configuration
@@ -198,8 +242,13 @@ app:
         strategy: NONE              # Disable retry completely
         maxAttempts: 1
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Immediate processing: {input}"
-          - tool: "fastService"      # Fails immediately on error
-          - prompt: "Quick response"
+          - nodeId: "immediate_processing"
+            prompt: "Immediate processing: {input}"
+          - nodeId: "fast_service_call"
+            dependsOn: ["immediate_processing"]
+            tool: "fastService"      # Fails immediately on error
+          - nodeId: "quick_response"
+            dependsOn: ["fast_service_call"]
+            prompt: "Quick response"

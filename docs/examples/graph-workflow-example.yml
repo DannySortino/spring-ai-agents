@@ -1,0 +1,323 @@
+# Graph Workflow Example Configuration
+# This example demonstrates the unified GRAPH workflow type that supports:
+# - Arbitrary dependencies between nodes
+# - Conditional logic (if/then/else branching)
+# - Orchestrator patterns (manager-worker-synthesizer)
+# - Routing patterns (content-based routing)
+# - Complex combinations of all patterns
+
+spring:
+  ai:
+    agents:
+      - name: "data-analysis-agent"
+        systemPrompt: "You are a data analysis expert. Process requests step by step with proper dependencies."
+        workflow:
+          type: graph
+          chain:
+            # Node A: Initial data extraction (no dependencies)
+            - nodeId: "extract_data"
+              prompt: "Extract key data points from the input: {input}"
+              
+            # Node B: Statistical analysis (depends on A)
+            - nodeId: "statistical_analysis"
+              dependsOn: ["extract_data"]
+              prompt: "Perform statistical analysis on the extracted data: {extract_data}"
+              
+            # Node C: Trend analysis (depends on A)
+            - nodeId: "trend_analysis"
+              dependsOn: ["extract_data"]
+              prompt: "Identify trends in the data: {extract_data}"
+              
+            # Node D: Final report (depends on both B and C, demonstrating A->B, A->C, B->D, C->D pattern)
+            - nodeId: "generate_report"
+              dependsOn: ["statistical_analysis", "trend_analysis"]
+              prompt: "Generate a comprehensive report combining statistical analysis: {statistical_analysis} and trend analysis: {trend_analysis}"
+
+      - name: "research-workflow-agent"
+        systemPrompt: "You are a research assistant that conducts thorough analysis."
+        workflow:
+          type: graph
+          chain:
+            # Complex dependency pattern: A->B, B->C, A->C (as specified in the issue)
+            - nodeId: "initial_research"
+              prompt: "Conduct initial research on: {input}"
+              
+            - nodeId: "deep_dive"
+              dependsOn: ["initial_research"]
+              prompt: "Perform deep dive analysis based on initial findings: {initial_research}"
+              
+            - nodeId: "synthesis"
+              dependsOn: ["initial_research", "deep_dive"]
+              prompt: "Synthesize findings from initial research: {initial_research} and deep dive: {deep_dive}"
+
+      - name: "tool-integration-agent"
+        systemPrompt: "You are an agent that integrates multiple tools in a workflow."
+        workflow:
+          type: graph
+          chain:
+            # Node with tool call
+            - nodeId: "search_web"
+              tool: "web_search"
+              
+            # Node depending on tool result
+            - nodeId: "analyze_results"
+              dependsOn: ["search_web"]
+              prompt: "Analyze the search results: {search_web}"
+              
+            # Parallel processing of analysis
+            - nodeId: "extract_facts"
+              dependsOn: ["analyze_results"]
+              prompt: "Extract key facts from: {analyze_results}"
+              
+            - nodeId: "identify_sources"
+              dependsOn: ["analyze_results"]
+              prompt: "Identify reliable sources from: {analyze_results}"
+              
+            # Final synthesis
+            - nodeId: "create_summary"
+              dependsOn: ["extract_facts", "identify_sources"]
+              prompt: "Create summary with facts: {extract_facts} and sources: {identify_sources}"
+
+      - name: "parallel-processing-agent"
+        systemPrompt: "You demonstrate parallel execution of independent nodes."
+        workflow:
+          type: graph
+          chain:
+            # Root node
+            - nodeId: "input_processing"
+              prompt: "Process and categorize input: {input}"
+              
+            # Three independent branches that can execute in parallel
+            - nodeId: "branch_a"
+              dependsOn: ["input_processing"]
+              prompt: "Process branch A: {input_processing}"
+              
+            - nodeId: "branch_b"
+              dependsOn: ["input_processing"]
+              prompt: "Process branch B: {input_processing}"
+              
+            - nodeId: "branch_c"
+              dependsOn: ["input_processing"]
+              prompt: "Process branch C: {input_processing}"
+              
+            # Convergence node
+            - nodeId: "merge_results"
+              dependsOn: ["branch_a", "branch_b", "branch_c"]
+              prompt: "Merge results from A: {branch_a}, B: {branch_b}, C: {branch_c}"
+
+      # Conditional Logic Agent - demonstrates all condition types
+      - name: "conditional-logic-agent"
+        systemPrompt: "You are an intelligent assistant with advanced conditional logic capabilities."
+        workflow:
+          type: graph
+          chain:
+            # EQUALS condition example
+            - nodeId: "priority_check"
+              conditional:
+                condition:
+                  type: EQUALS
+                  field: "input"
+                  value: "high priority"
+                  ignoreCase: true
+                thenStep:
+                  prompt: "HIGH PRIORITY: Immediate attention required for: {input}"
+                elseStep:
+                  prompt: "Standard processing for: {input}"
+            
+            # CONTAINS condition with nested logic
+            - nodeId: "content_analysis"
+              dependsOn: ["priority_check"]
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "input"
+                  value: "urgent"
+                  ignoreCase: true
+                thenStep:
+                  conditional:
+                    condition:
+                      type: REGEX
+                      field: "input"
+                      value: ".*emergency.*|.*critical.*|.*urgent.*"
+                    thenStep:
+                      prompt: "EMERGENCY PROTOCOL: {input} - Escalating immediately"
+                      tool: "emergencyTool"
+                    elseStep:
+                      prompt: "Urgent but manageable: {input}"
+                elseStep:
+                  prompt: "Regular processing: {input}"
+            
+            # EXISTS and EMPTY condition examples
+            - nodeId: "validation_check"
+              dependsOn: ["content_analysis"]
+              conditional:
+                condition:
+                  type: EXISTS
+                  field: "context.userId"
+                thenStep:
+                  prompt: "Authenticated user request: {input}"
+                elseStep:
+                  prompt: "Anonymous request: {input} - Limited functionality available"
+
+      # Orchestrator Pattern Agent - manager-worker-synthesizer using GraphWorkflow
+      - name: "orchestrator-agent"
+        systemPrompt: "You are a project manager coordinating specialized teams."
+        workflow:
+          type: graph
+          chain:
+            # Manager node - analyzes and makes decisions
+            - nodeId: "manager"
+              prompt: "As project manager, analyze this request and determine team assignments: {input}"
+            
+            # Worker nodes - execute in parallel, all depend on manager
+            - nodeId: "technical_specialist"
+              dependsOn: ["manager"]
+              prompt: "Technical Specialist - Manager decision: {manager} - Handle technical aspects: {input}"
+            
+            - nodeId: "business_analyst"
+              dependsOn: ["manager"]
+              prompt: "Business Analyst - Manager decision: {manager} - Analyze business requirements: {input}"
+            
+            - nodeId: "quality_assurance"
+              dependsOn: ["manager"]
+              prompt: "QA Specialist - Manager decision: {manager} - Review quality aspects: {input}"
+            
+            # Synthesizer node - combines all results
+            - nodeId: "project_synthesizer"
+              dependsOn: ["manager", "technical_specialist", "business_analyst", "quality_assurance"]
+              prompt: |
+                Project Summary:
+                Manager Decision: {manager}
+                Technical Analysis: {technical_specialist}
+                Business Analysis: {business_analyst}
+                Quality Review: {quality_assurance}
+                
+                Provide comprehensive project recommendations.
+
+      # Advanced Routing Agent - content-based routing with conditional logic
+      - name: "advanced-routing-agent"
+        systemPrompt: "You are a smart routing system that directs requests to appropriate handlers."
+        workflow:
+          type: graph
+          chain:
+            - nodeId: "intelligent_router"
+              conditional:
+                condition:
+                  type: REGEX
+                  field: "input"
+                  value: ".*technical.*|.*bug.*|.*error.*|.*system.*"
+                thenStep:
+                  prompt: "TECHNICAL ROUTE: Routing to technical support: {input}"
+                  tool: "technicalSupportTool"
+                elseStep:
+                  conditional:
+                    condition:
+                      type: CONTAINS
+                      field: "input"
+                      value: "billing"
+                      ignoreCase: true
+                    thenStep:
+                      conditional:
+                        condition:
+                          type: CONTAINS
+                          field: "input"
+                          value: "dispute"
+                          ignoreCase: true
+                        thenStep:
+                          prompt: "BILLING DISPUTE ROUTE: Handling billing dispute: {input}"
+                          tool: "billingDisputeTool"
+                        elseStep:
+                          prompt: "BILLING ROUTE: Handling billing inquiry: {input}"
+                          tool: "billingTool"
+                    elseStep:
+                      conditional:
+                        condition:
+                          type: EMPTY
+                          field: "context.userType"
+                        thenStep:
+                          prompt: "GUEST ROUTE: Limited assistance for guest user: {input}"
+                        elseStep:
+                          prompt: "GENERAL ROUTE: Full assistance for registered user: {input}"
+            
+            # Follow-up processing based on routing decision
+            - nodeId: "post_routing_analysis"
+              dependsOn: ["intelligent_router"]
+              prompt: "Analyze routing decision and provide additional context: {intelligent_router}"
+
+      # Complex Combined Pattern Agent - shows orchestrator + conditional + routing
+      - name: "complex-unified-agent"
+        systemPrompt: "You are an advanced AI system combining multiple workflow patterns."
+        workflow:
+          type: graph
+          chain:
+            # Initial routing decision
+            - nodeId: "request_classifier"
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "input"
+                  value: "complex"
+                  ignoreCase: true
+                thenStep:
+                  prompt: "Complex request detected - initiating orchestrator pattern: {input}"
+                elseStep:
+                  prompt: "Simple request - direct processing: {input}"
+            
+            # Conditional orchestrator activation
+            - nodeId: "orchestrator_manager"
+              dependsOn: ["request_classifier"]
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "request_classifier"
+                  value: "orchestrator"
+                thenStep:
+                  prompt: "Manager: Coordinating complex request: {input}"
+                elseStep:
+                  prompt: "Direct handler: Processing simple request: {input}"
+            
+            # Parallel workers (only activated for complex requests)
+            - nodeId: "specialist_a"
+              dependsOn: ["orchestrator_manager"]
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "orchestrator_manager"
+                  value: "Coordinating"
+                thenStep:
+                  prompt: "Specialist A: {orchestrator_manager} - Handling aspect A of: {input}"
+                elseStep:
+                  prompt: "Skipping specialist A for simple request"
+            
+            - nodeId: "specialist_b"
+              dependsOn: ["orchestrator_manager"]
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "orchestrator_manager"
+                  value: "Coordinating"
+                thenStep:
+                  prompt: "Specialist B: {orchestrator_manager} - Handling aspect B of: {input}"
+                elseStep:
+                  prompt: "Skipping specialist B for simple request"
+            
+            # Final synthesis
+            - nodeId: "final_synthesizer"
+              dependsOn: ["specialist_a", "specialist_b"]
+              prompt: |
+                Final Response:
+                Classification: {request_classifier}
+                Management: {orchestrator_manager}
+                Specialist A: {specialist_a}
+                Specialist B: {specialist_b}
+                
+                Provide comprehensive final response.
+
+# MCP Server Configuration (if using tools)
+mcp:
+  servers:
+    web_search:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-web-search"]
+      env:
+        BRAVE_API_KEY: "${BRAVE_API_KEY}"

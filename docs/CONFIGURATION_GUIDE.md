@@ -19,7 +19,9 @@
 The Spring AI Agent Platform is a configuration-driven system that allows you to create sophisticated AI agents with various workflow patterns. This guide covers all supported configuration options and how to use them effectively.
 
 ### Key Features
-- **Multiple Workflow Types**: Chain, Parallel, Orchestrator, and Routing workflows
+- **Unified Graph Workflow System**: Single, powerful workflow engine that handles all execution patterns
+- **Advanced Patterns**: Conditional logic, parallel execution, dependency management, and complex data flows
+- **Flexible Execution**: Sequential chains, parallel processing, orchestrator patterns, and conditional routing
 - **MCP Integration**: Model Context Protocol for external tool integration
 - **Flexible Agent Configuration**: System prompts, models, and workflow definitions
 - **Production Ready**: SSL, monitoring, logging, and security features
@@ -39,9 +41,10 @@ app:
       model: openai
       system-prompt: "You are a helpful assistant."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Respond to: {input}"
+          - nodeId: "response"
+            prompt: "Respond to: {input}"
 ```
 
 ### Configuration Structure
@@ -101,102 +104,96 @@ system-prompt: |
   Follow company policies and escalate when necessary.
 ```
 
-## Workflow Types
+## Graph Workflow
 
-### 1. Chain Workflow
-Executes steps sequentially, passing output from one step to the next.
+The Graph Workflow is the unified workflow engine that supports all execution patterns through a single, powerful dependency-based approach. It can handle sequential chains, parallel processing, orchestrator patterns, conditional routing, and complex combinations of all these patterns.
+
+### Graph Workflow
+Executes steps based on dependency relationships between nodes, enabling complex data flow patterns with arbitrary dependencies.
 
 ```yaml
 workflow:
-  type: chain
+  type: graph
   chain:
-    - prompt: "Analyze the request: {input}"
-    - tool: "dataTool"                    # Optional: Call MCP tool
-    - prompt: "Provide response based on analysis"
+    - nodeId: "extract_data"
+      prompt: "Extract key data points from: {input}"
+      
+    - nodeId: "statistical_analysis"
+      dependsOn: ["extract_data"]
+      prompt: "Perform statistical analysis on: {extract_data}"
+      
+    - nodeId: "trend_analysis"
+      dependsOn: ["extract_data"]
+      prompt: "Identify trends in: {extract_data}"
+      
+    - nodeId: "generate_report"
+      dependsOn: ["statistical_analysis", "trend_analysis"]
+      prompt: "Generate report combining stats: {statistical_analysis} and trends: {trend_analysis}"
 ```
 
-**Chain Step Properties:**
-- `prompt`: Text prompt to process
-- `tool`: MCP tool name to call
-- `nested-workflow`: Nested workflow definition
+**Graph Properties:**
+- `chain`: List of workflow steps with node IDs and dependencies
+- Each step must have:
+  - `nodeId`: Unique identifier for the node
+  - `prompt` or `tool`: Processing instruction or tool to call
+  - `dependsOn` (optional): List of node IDs this step depends on
 
-### 2. Parallel Workflow
-Executes multiple tasks simultaneously and aggregates results.
+**Key Features:**
+- **Arbitrary Dependencies**: Support complex patterns like A→B, B→C, A→C
+- **Parallel Execution**: Independent nodes execute concurrently
+- **Cycle Detection**: Prevents infinite loops with validation
+- **Result Passing**: Results from dependencies are passed to dependent nodes
+- **Topological Sorting**: Automatic execution order determination
 
+**Use Cases:**
+- Complex data processing pipelines with multiple dependencies
+- Workflows requiring both sequential and parallel execution
+- Multi-step analysis where later steps need results from multiple earlier steps
+- Extensible dependency management for evolving workflows
+
+**Example Dependency Patterns:**
+
+*Linear Chain*: A → B → C
 ```yaml
-workflow:
-  type: parallel
-  tasks:
-    - name: "validation"
-      workflow:
-        type: chain
-        chain:
-          - prompt: "Validate: {input}"
-    - name: "analysis"
-      workflow:
-        type: chain
-        chain:
-          - prompt: "Analyze: {input}"
-  aggregator: "Combine results: {results}"
+chain:
+  - nodeId: "A"
+    prompt: "Step A: {input}"
+  - nodeId: "B"
+    dependsOn: ["A"]
+    prompt: "Step B: {A}"
+  - nodeId: "C"
+    dependsOn: ["B"]
+    prompt: "Step C: {B}"
 ```
 
-**Parallel Properties:**
-- `tasks`: List of named tasks to execute in parallel
-- `aggregator`: Prompt to combine all task results
-
-### 3. Orchestrator Workflow
-Uses a manager to coordinate multiple specialized workers.
-
+*Diamond Pattern*: A → B, A → C, B → D, C → D
 ```yaml
-workflow:
-  type: orchestrator
-  manager-prompt: |
-    Analyze the request: {input}
-    Determine which workers should handle this.
-  workers:
-    - name: "specialist1"
-      workflow:
-        type: chain
-        chain:
-          - prompt: "Handle specialized task: {input}"
-    - name: "specialist2"
-      workflow:
-        type: chain
-        chain:
-          - prompt: "Handle different task: {input}"
-  synthesizer-prompt: |
-    Manager decision: {managerDecision}
-    Worker results: {workerResults}
-    Provide final response.
+chain:
+  - nodeId: "A"
+    prompt: "Root: {input}"
+  - nodeId: "B"
+    dependsOn: ["A"]
+    prompt: "Branch B: {A}"
+  - nodeId: "C"
+    dependsOn: ["A"]
+    prompt: "Branch C: {A}"
+  - nodeId: "D"
+    dependsOn: ["B", "C"]
+    prompt: "Merge: {B} and {C}"
 ```
 
-**Orchestrator Properties:**
-- `manager-prompt`: Prompt for the manager to analyze and decide
-- `workers`: List of specialized worker agents
-- `synthesizer-prompt`: Prompt to combine manager decision and worker results
-
-### 4. Routing Workflow
-Routes requests to different processing paths based on content.
-
+*Complex Dependencies*: A → B, B → C, A → C
 ```yaml
-workflow:
-  type: routing
-  routes:
-    billing:
-      prompt: "Handle billing inquiry: {input}"
-      tool: "billingTool"
-    support:
-      prompt: "Provide technical support: {input}"
-      tool: "supportTool"
-    general:
-      prompt: "General assistance: {input}"
+chain:
+  - nodeId: "A"
+    prompt: "Initial: {input}"
+  - nodeId: "B"
+    dependsOn: ["A"]
+    prompt: "Process: {A}"
+  - nodeId: "C"
+    dependsOn: ["A", "B"]
+    prompt: "Synthesize: {A} and {B}"
 ```
-
-**Routing Properties:**
-- `routes`: Map of route names to route definitions
-- Each route can have:
-  - `prompt`: Processing prompt for this route
-  - `tool`: MCP tool to call for this route
 
 ## Retry Configuration
 

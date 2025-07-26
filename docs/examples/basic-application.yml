@@ -31,30 +31,48 @@ app:
       model: openai
       system-prompt: "You are a helpful and friendly assistant."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Respond to: {input}"
+          - nodeId: "response"
+            prompt: "Respond to: {input}"
 
     # Simple task-oriented agent
     - name: taskAgent
       model: openai
       system-prompt: "You are a task-oriented assistant that helps with specific requests."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Analyze the task: {input}"
-          - prompt: "Provide step-by-step instructions to complete the task"
+          - nodeId: "analyze"
+            prompt: "Analyze the task: {input}"
+          - nodeId: "instructions"
+            dependsOn: ["analyze"]
+            prompt: "Provide step-by-step instructions to complete the task: {analyze}"
 
-    # Basic routing agent for different types of requests
+    # Basic routing agent using GraphWorkflow conditionals for different types of requests
     - name: routingAgent
       model: openai
       system-prompt: "You are a smart assistant that handles different types of requests."
       workflow:
-        type: routing
-        routes:
-          question:
-            prompt: "Answer the question: {input}"
-          task:
-            prompt: "Help with the task: {input}"
-          general:
-            prompt: "Provide general assistance for: {input}"
+        type: graph
+        chain:
+          - nodeId: "request_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "question"
+                ignoreCase: true
+              thenStep:
+                prompt: "Answer the question: {input}"
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "task"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Help with the task: {input}"
+                  elseStep:
+                    prompt: "Provide general assistance for: {input}"

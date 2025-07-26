@@ -91,9 +91,10 @@ class AgentConfigurationTest {
         agent1.setSystemPrompt("Test prompt 1");
         
         AppProperties.WorkflowDef workflow1 = new AppProperties.WorkflowDef();
-        workflow1.setType(WorkflowType.CHAIN);
+        workflow1.setType(WorkflowType.GRAPH);
         
         AppProperties.WorkflowStepDef step1 = new AppProperties.WorkflowStepDef();
+        step1.setNodeId("test_step_1");
         step1.setPrompt("Test prompt: {input}");
         workflow1.setChain(List.of(step1));
         
@@ -105,9 +106,10 @@ class AgentConfigurationTest {
         agent2.setSystemPrompt("Test prompt 2");
         
         AppProperties.WorkflowDef workflow2 = new AppProperties.WorkflowDef();
-        workflow2.setType(WorkflowType.CHAIN);
+        workflow2.setType(WorkflowType.GRAPH);
         
         AppProperties.WorkflowStepDef step2 = new AppProperties.WorkflowStepDef();
+        step2.setNodeId("test_step_2");
         step2.setPrompt("Another test prompt: {input}");
         workflow2.setChain(List.of(step2));
         

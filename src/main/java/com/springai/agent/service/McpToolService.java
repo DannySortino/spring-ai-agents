@@ -23,7 +23,7 @@ import java.util.Map;
  * The service integrates with external MCP servers and provides a unified
  * interface for tool execution with built-in error handling and retry mechanisms.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @Service
