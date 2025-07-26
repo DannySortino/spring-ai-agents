@@ -6,12 +6,16 @@ import com.springai.agent.config.AppProperties.ConditionDef;
 import com.springai.agent.config.AppProperties.ContextManagementDef;
 import com.springai.agent.config.ConditionType;
 import com.springai.agent.service.McpToolService;
+import com.springai.agent.workflow.dependency.DependencyManager;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Workflow implementation that executes steps sequentially in a chain pattern.
@@ -41,18 +45,25 @@ public class ChainWorkflow implements Workflow {
     private final ChatModel chatModel;
     private final List<WorkflowStepDef> steps;
     private final McpToolService mcpToolService;
+    private final DependencyManager dependencyManager;
     
     // Constructor for WorkflowStepDef-based workflow (preferred)
     public ChainWorkflow(ChatModel chatModel, List<WorkflowStepDef> steps, McpToolService mcpToolService) {
         this.chatModel = chatModel;
         this.steps = steps;
         this.mcpToolService = mcpToolService;
+        this.dependencyManager = new DependencyManager();
+        
+        // Validate dependencies at initialization time
+        validateDependencies();
     }
     
     // Backward compatibility constructor for string-based prompts
     public ChainWorkflow(ChatModel chatModel, List<String> prompts) {
         this.chatModel = chatModel;
         this.mcpToolService = null;
+        this.dependencyManager = new DependencyManager();
+        
         // Convert string prompts to WorkflowStepDef objects
         if (prompts != null) {
             this.steps = prompts.stream()
@@ -64,6 +75,38 @@ public class ChainWorkflow implements Workflow {
                 .toList();
         } else {
             this.steps = List.of();
+        }
+        
+        // No need to validate dependencies for string-based prompts as they don't have IDs or dependencies
+    }
+    
+    /**
+     * Validates that all dependencies are correctly configured.
+     * Throws an IllegalArgumentException if there are any validation errors.
+     */
+    private void validateDependencies() {
+        if (steps == null || steps.isEmpty()) {
+            return;
+        }
+        
+        // Collect all step IDs
+        Set<String> stepIds = steps.stream()
+            .filter(step -> step.getId() != null && !step.getId().isEmpty())
+            .map(WorkflowStepDef::getId)
+            .collect(Collectors.toSet());
+        
+        // Build dependency map
+        Map<String, List<String>> dependencyMap = new HashMap<>();
+        for (WorkflowStepDef step : steps) {
+            if (step.getId() != null && !step.getId().isEmpty() && step.getDependencies() != null) {
+                dependencyMap.put(step.getId(), step.getDependencies());
+            }
+        }
+        
+        // Validate dependencies
+        DependencyManager.ValidationResult result = dependencyManager.validateDependencies(stepIds, dependencyMap);
+        if (!result.isValid()) {
+            throw new IllegalArgumentException("Dependency validation failed: " + result.getErrorMessage());
         }
     }
     
@@ -257,7 +300,7 @@ public class ChainWorkflow implements Workflow {
      * Process dependencies for a workflow step
      * 
      * This method implements the data dependency management between workflow steps.
-     * It treats the workflow as a graph where nodes are tool calls and edges are data
+     * It treats the workflow as a graph where nodes are workflow steps and edges are data
      * dependencies between them. The method:
      * 
      * 1. Checks if the step has any dependencies defined (edges pointing to this node)
@@ -276,45 +319,18 @@ public class ChainWorkflow implements Workflow {
         if (step == null) {
             return;
         }
-    
+        
         // Get the step results map from context
-        Map<String, Object> stepResults = (Map<String, Object>) context.getOrDefault("stepResults", new java.util.HashMap<>());
-    
-        // Process result mappings if defined
-        // This maps dependency results to named variables in the context
-        // Example: {"userInfo": "user-step", "billingInfo": "billing-step"}
-        if (step.getResultMapping() != null && !step.getResultMapping().isEmpty()) {
-            for (Map.Entry<String, String> mapping : step.getResultMapping().entrySet()) {
-                String variableName = mapping.getKey();
-                String dependencyId = mapping.getValue();
-            
-                // Get the result of the dependency step
-                Object dependencyResult = stepResults.get(dependencyId);
-                if (dependencyResult != null) {
-                    // Add the mapped result to the context with the specified variable name
-                    // This allows referencing the dependency result by a meaningful name
-                    context.put(variableName, dependencyResult);
-                }
-            }
-        }
-    
-        // Process direct dependencies if defined
-        // This makes all dependency results available in a dependencyResults map
-        if (step.getDependencies() != null && !step.getDependencies().isEmpty()) {
-            // Create a map to store dependency results
-            Map<String, Object> dependencyResults = new java.util.HashMap<>();
+        Map<String, Object> stepResults = (Map<String, Object>) context.getOrDefault("stepResults", new HashMap<>());
         
-            for (String dependencyId : step.getDependencies()) {
-                Object dependencyResult = stepResults.get(dependencyId);
-                if (dependencyResult != null) {
-                    dependencyResults.put(dependencyId, dependencyResult);
-                }
-            }
-        
-            // Add all dependency results to the context
-            // This allows referencing all dependencies through the dependencyResults map
-            context.put("dependencyResults", dependencyResults);
-        }
+        // Use the DependencyManager to process dependencies
+        dependencyManager.processDependencies(
+            step.getId(),
+            step.getDependencies(),
+            step.getResultMapping(),
+            stepResults,
+            context
+        );
     }
     
     /**

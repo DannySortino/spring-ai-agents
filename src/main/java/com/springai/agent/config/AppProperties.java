@@ -84,6 +84,31 @@ public class AppProperties {
         private String synthesizerPrompt;
         private Map<String, RouteDef> routes;
         
+        /**
+         * ID for this workflow, used for dependency management.
+         * Required when defining dependencies between workflows.
+         */
+        private String id;
+        
+        /**
+         * List of workflow IDs that this workflow depends on.
+         * The results from these workflows will be available when executing this workflow.
+         */
+        private List<String> dependencies;
+        
+        /**
+         * Map of variable names to dependency workflow IDs.
+         * This allows referencing results from specific workflows in the context.
+         * Example: {"userData": "user-workflow", "billingData": "billing-workflow"}
+         */
+        private Map<String, String> resultMapping;
+        
+        /**
+         * Whether to execute all routes in a ROUTING workflow, respecting dependencies.
+         * Only applicable for ROUTING workflow type.
+         */
+        private Boolean executeAllRoutes;
+        
         @NestedConfigurationProperty
         private WorkflowDef nestedWorkflow; // Support for nested workflows
     }

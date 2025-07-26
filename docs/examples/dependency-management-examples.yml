@@ -1,0 +1,237 @@
+# Dependency Management Examples
+# This file demonstrates various ways to use dependency management in Spring AI Agents
+
+# This file contains multiple agent examples showing different dependency management patterns
+agents:
+  # Example 1: Chain Workflow with Step Dependencies
+  # This example shows how to define dependencies between steps in a chain workflow
+  - name: chain-dependency-example
+    model: gpt-3.5-turbo
+    workflow:
+      type: CHAIN
+      chain:
+        # Step 1: Extract user information
+        - id: user-info-step
+          prompt: "Extract user information (name, email, account ID) from: {input}"
+        
+        # Step 2: Extract billing information
+        - id: billing-info-step
+          prompt: "Extract billing information (plan, payment method, billing cycle) from: {input}"
+        
+        # Step 3: Analyze user history (depends on user-info-step)
+        - id: user-history-step
+          prompt: "Based on this user information: {step.user-info-step}, analyze their likely usage patterns."
+          dependencies:
+            - user-info-step
+        
+        # Step 4: Generate recommendations (depends on multiple steps)
+        - id: recommendations-step
+          prompt: |
+            Generate product recommendations based on:
+            User Info: {step.user-info-step}
+            Billing Info: {step.billing-info-step}
+            Usage Patterns: {step.user-history-step}
+          dependencies:
+            - user-info-step
+            - billing-info-step
+            - user-history-step
+        
+        # Step 5: Generate summary (with result mapping for clearer references)
+        - id: summary-step
+          prompt: |
+            Create a summary report with:
+            User Profile: {userProfile}
+            Billing Details: {billingDetails}
+            Recommendations: {recommendations}
+          dependencies:
+            - user-info-step
+            - billing-info-step
+            - recommendations-step
+          resultMapping:
+            userProfile: user-info-step
+            billingDetails: billing-info-step
+            recommendations: recommendations-step
+
+  # Example 2: Parallelization Workflow with Dependencies
+  # This example shows how to define dependencies between parallel workflows
+  - name: parallel-dependency-example
+    model: gpt-3.5-turbo
+    workflow:
+      type: PARALLELIZATION
+      id: main-parallel-workflow
+      # Define the workflows to execute in parallel with dependencies
+      tasks:
+        - name: data-extraction
+          workflow:
+            id: extraction-workflow
+            type: CHAIN
+            chain:
+              - prompt: "Extract structured data from: {input}"
+        
+        - name: sentiment-analysis
+          workflow:
+            id: sentiment-workflow
+            type: CHAIN
+            # This workflow depends on the extraction workflow
+            dependencies:
+              - extraction-workflow
+            chain:
+              - prompt: "Analyze the sentiment in this data: {dependencyResults.extraction-workflow}"
+        
+        - name: summarization
+          workflow:
+            id: summary-workflow
+            type: CHAIN
+            # This workflow depends on both previous workflows
+            dependencies:
+              - extraction-workflow
+              - sentiment-workflow
+            resultMapping:
+              extractedData: extraction-workflow
+              sentimentResults: sentiment-workflow
+            chain:
+              - prompt: |
+                  Create a summary that includes:
+                  Extracted Data: {extractedData}
+                  Sentiment Analysis: {sentimentResults}
+      
+      # Aggregator prompt to combine results
+      aggregator: |
+        Combine these analysis results into a comprehensive report:
+        {results}
+
+  # Example 3: Orchestrator-Workers Workflow with Dependencies
+  # This example shows how to define dependencies between workers
+  - name: orchestrator-dependency-example
+    model: gpt-3.5-turbo
+    workflow:
+      type: ORCHESTRATOR_WORKERS
+      # Manager prompt to analyze the input and decide which workers to engage
+      managerPrompt: |
+        Analyze this input and determine which specialized workers should process it:
+        {input}
+      
+      # Define workers with dependencies
+      workers:
+        - name: data-worker
+          workflow:
+            id: data-workflow
+            type: CHAIN
+            chain:
+              - prompt: "Extract and structure the data from: {input}"
+        
+        - name: analysis-worker
+          workflow:
+            id: analysis-workflow
+            # This worker depends on the data worker
+            dependencies:
+              - data-workflow
+            type: CHAIN
+            chain:
+              - prompt: "Analyze this structured data: {dependencyResults.data-workflow}"
+        
+        - name: recommendation-worker
+          workflow:
+            id: recommendation-workflow
+            # This worker depends on both previous workers
+            dependencies:
+              - data-workflow
+              - analysis-workflow
+            resultMapping:
+              structuredData: data-workflow
+              analysisResults: analysis-workflow
+            type: CHAIN
+            chain:
+              - prompt: |
+                  Generate recommendations based on:
+                  Data: {structuredData}
+                  Analysis: {analysisResults}
+      
+      # Synthesizer prompt to combine worker results
+      synthesizerPrompt: |
+        Based on the manager's decision: {managerDecision}
+        
+        And the workers' results:
+        {workerResults}
+        
+        Create a comprehensive response that addresses the user's needs.
+
+  # Example 4: Routing Workflow with Dependencies
+  # This example shows how to define dependencies between routes
+  - name: routing-dependency-example
+    model: gpt-3.5-turbo
+    workflow:
+      type: ROUTING
+      id: main-routing-workflow
+      # Execute all routes respecting dependencies (not just the selected one)
+      executeAllRoutes: true
+      
+      # Define routes with dependencies
+      routes:
+        user-route:
+          prompt: "Extract user information from: {input}"
+        
+        billing-route:
+          prompt: "Extract billing information from: {input}"
+        
+        analysis-route:
+          prompt: |
+            Analyze the user and billing information:
+            User: {dependencyResults.user-route}
+            Billing: {dependencyResults.billing-route}
+      
+      # Define dependencies between routes
+      dependencies:
+        # analysis-route depends on user-route and billing-route
+        analysis-route:
+          - user-route
+          - billing-route
+
+  # Example 5: Complex Multi-Workflow Dependencies
+  # This example shows how to define dependencies between different workflow types
+  - name: complex-dependency-example
+    model: gpt-3.5-turbo
+    workflow:
+      type: CHAIN
+      id: main-workflow
+      chain:
+        # Step 1: Initial data extraction
+        - id: extraction-step
+          prompt: "Extract key information from: {input}"
+        
+        # Step 2: Use a nested routing workflow that depends on the extraction step
+        - id: routing-step
+          nestedWorkflow:
+            type: ROUTING
+            id: nested-routing
+            # Dependencies for the nested workflow
+            dependencies:
+              - extraction-step
+            resultMapping:
+              extractedData: extraction-step
+            executeAllRoutes: true
+            routes:
+              technical-route:
+                prompt: "Analyze technical aspects of: {extractedData}"
+              business-route:
+                prompt: "Analyze business implications of: {extractedData}"
+              security-route:
+                prompt: |
+                  Analyze security considerations for:
+                  Technical: {dependencyResults.technical-route}
+                  Business: {dependencyResults.business-route}
+            # Route dependencies within the nested workflow
+            routeDependencies:
+              security-route:
+                - technical-route
+                - business-route
+        
+        # Step 3: Final synthesis that depends on the routing step
+        - id: synthesis-step
+          prompt: |
+            Create a comprehensive report based on:
+            Initial Data: {step.extraction-step}
+            Routing Analysis: {step.routing-step}
+          dependencies:
+            - extraction-step
+            - routing-step
