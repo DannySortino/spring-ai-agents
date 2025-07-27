@@ -10,7 +10,7 @@ public enum ConditionType {
      * Exact string equality comparison.
      * Compares the field value exactly with the expected value.
      * Supports case-sensitive and case-insensitive comparison via ignoreCase flag.
-     * 
+     * <p>
      * Example: field="input", value="urgent", ignoreCase=true
      * Will match if input contains exactly "urgent" (case-insensitive)
      */
@@ -20,7 +20,7 @@ public enum ConditionType {
      * Substring containment check.
      * Checks if the field value contains the expected value as a substring.
      * Supports case-sensitive and case-insensitive comparison via ignoreCase flag.
-     * 
+     * <p>
      * Example: field="input", value="invoice", ignoreCase=true
      * Will match if input contains "invoice" anywhere within it
      */
@@ -30,7 +30,7 @@ public enum ConditionType {
      * Regular expression pattern matching.
      * Uses Java regex patterns to match against the field value.
      * The ignoreCase flag is not used for regex - use regex flags instead.
-     * 
+     * <p>
      * Example: field="input", value=".*invoice.*|.*bill.*|.*payment.*"
      * Will match if input contains "invoice", "bill", or "payment"
      */
@@ -40,7 +40,7 @@ public enum ConditionType {
      * Field existence check.
      * Checks if the field exists and has a non-null, non-empty value.
      * The expected value is ignored for this condition type.
-     * 
+     * <p>
      * Example: field="context.userId", value="" (ignored)
      * Will match if context.userId exists and is not empty
      */
@@ -50,7 +50,7 @@ public enum ConditionType {
      * Field emptiness check.
      * Checks if the field is null or empty.
      * The expected value is ignored for this condition type.
-     * 
+     * <p>
      * Example: field="previousResult", value="" (ignored)
      * Will match if previousResult is null or empty
      */

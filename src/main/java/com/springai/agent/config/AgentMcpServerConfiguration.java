@@ -14,8 +14,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +24,7 @@ import java.util.function.Function;
  * This replaces the custom REST controller approach with proper Spring AI MCP server integration.
  * Each agent with MCP server configuration enabled will be exposed as an MCP tool through the
  * Spring AI MCP server auto-configuration.
- * 
+ * <p>
  * Uses BeanDefinitionRegistryPostProcessor to dynamically register function beans based on
  * agent configuration instead of hardcoded @Bean methods.
  */
@@ -284,32 +282,5 @@ public class AgentMcpServerConfiguration implements ApplicationListener<Applicat
         } catch (Exception e) {
             log.error("Failed to create Spring AI MCP tool for agent '{}': {}", agentName, e.getMessage(), e);
         }
-    }
-    
-    /**
-     * Note: Individual function beans are now created dynamically based on agent configuration
-     * using BeanDefinitionRegistryPostProcessor. No hardcoded @Bean methods are needed.
-     * Spring AI MCP server will discover the dynamically registered functions and expose them as MCP tools.
-     */
-    
-    /**
-     * Get all agent MCP tools
-     */
-    public Map<String, AgentMcpToolInfo> getAgentMcpTools() {
-        return Map.copyOf(agentMcpTools);
-    }
-    
-    /**
-     * Get MCP tool for a specific agent
-     */
-    public AgentMcpToolInfo getAgentMcpTool(String agentName) {
-        return agentMcpTools.get(agentName);
-    }
-    
-    /**
-     * Check if an agent has an MCP tool
-     */
-    public boolean hasAgentMcpTool(String agentName) {
-        return agentMcpTools.containsKey(agentName);
     }
 }

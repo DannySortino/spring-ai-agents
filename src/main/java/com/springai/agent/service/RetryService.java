@@ -10,32 +10,28 @@ import org.springframework.retry.backoff.BackOffPolicy;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.backoff.ExponentialRandomBackOffPolicy;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.backoff.UniformRandomBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.RetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
 /**
  * Service for creating and executing retry operations with configurable strategies.
- * 
+ * <p>
  * This service provides comprehensive retry functionality including:
  * - Multiple retry strategies (fixed delay, exponential backoff, linear backoff, random)
  * - Custom retry policies with exception classification
  * - Configurable backoff policies and timing
  * - Integration with Spring Retry framework
  * - Detailed logging and monitoring of retry attempts
- * 
+ * <p>
  * The service supports both default retry configurations and per-operation
  * custom retry settings, allowing fine-grained control over retry behavior
  * across different parts of the application.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @Service
@@ -210,14 +206,13 @@ public class RetryService {
      * Uses exponential backoff with 3 attempts.
      */
     public <T> T executeWithDefaultRetry(Callable<T> operation, String operationName) throws Exception {
-        RetryDef defaultRetry = RetryDef.builder()
-            .strategy(RetryStrategy.EXPONENTIAL)
-            .maxAttempts(3)
-            .initialDelay(1000L)
-            .maxDelay(10000L)
-            .multiplier(2.0)
-            .enabled(true)
-            .build();
+        RetryDef defaultRetry = new RetryDef();
+        defaultRetry.setStrategy(RetryStrategy.EXPONENTIAL);
+        defaultRetry.setMaxAttempts(3);
+        defaultRetry.setInitialDelay(1000L);
+        defaultRetry.setMaxDelay(10000L);
+        defaultRetry.setMultiplier(2.0);
+        defaultRetry.setEnabled(true);
             
         return executeWithRetry(operation, defaultRetry, operationName);
     }

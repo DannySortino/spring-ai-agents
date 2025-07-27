@@ -1,0 +1,3992 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring AI Agents - Graph Visualization</title>
+
+    <!-- CSS Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/vis-network/dist/vis-network.min.css" rel="stylesheet">
+
+    <style>
+        /* CSS Custom Properties for Theme System */
+        :root {
+            /* Light Theme Colors */
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-muted: #adb5bd;
+            --border-color: #dee2e6;
+            --border-light: #e9ecef;
+            --shadow-color: rgba(0,0,0,0.1);
+            --shadow-hover: rgba(0,0,0,0.15);
+
+            /* Interactive Colors */
+            --primary: #007bff;
+            --primary-hover: #0056b3;
+            --success: #28a745;
+            --success-hover: #1e7e34;
+            --warning: #ffc107;
+            --warning-hover: #e0a800;
+            --danger: #dc3545;
+            --danger-hover: #c82333;
+            --info: #17a2b8;
+            --info-hover: #138496;
+
+            /* Graph Specific Colors */
+            --node-prompt: #3498db;
+            --node-tool: #e74c3c;
+            --node-conditional: #f39c12;
+            --connection-color: #848484;
+            --connection-preview: #007bff;
+            --connection-ghost: #6c757d;
+
+            /* Toast Colors */
+            --toast-success-bg: #d4edda;
+            --toast-success-border: #c3e6cb;
+            --toast-success-text: #155724;
+            --toast-danger-bg: #f8d7da;
+            --toast-danger-border: #f5c6cb;
+            --toast-danger-text: #721c24;
+            --toast-warning-bg: #fff3cd;
+            --toast-warning-border: #ffeaa7;
+            --toast-warning-text: #856404;
+            --toast-info-bg: #d1ecf1;
+            --toast-info-border: #bee5eb;
+            --toast-info-text: #0c5460;
+        }
+
+        /* Dark Theme Colors */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #888888;
+            --border-color: #404040;
+            --border-light: #505050;
+            --shadow-color: rgba(0,0,0,0.3);
+            --shadow-hover: rgba(0,0,0,0.4);
+
+            /* Interactive Colors - Adjusted for dark theme */
+            --primary: #4dabf7;
+            --primary-hover: #339af0;
+            --success: #51cf66;
+            --success-hover: #40c057;
+            --warning: #ffd43b;
+            --warning-hover: #fcc419;
+            --danger: #ff6b6b;
+            --danger-hover: #fa5252;
+            --info: #74c0fc;
+            --info-hover: #4dabf7;
+
+            /* Graph Specific Colors - Dark theme variants */
+            --node-prompt: #4dabf7;
+            --node-tool: #ff6b6b;
+            --node-conditional: #ffd43b;
+            --connection-color: #b0b0b0;
+            --connection-preview: #4dabf7;
+            --connection-ghost: #888888;
+
+            /* Toast Colors - Dark theme */
+            --toast-success-bg: #2b5a2f;
+            --toast-success-border: #3d7c47;
+            --toast-success-text: #a3d9a5;
+            --toast-danger-bg: #5a2b2b;
+            --toast-danger-border: #7c3d3d;
+            --toast-danger-text: #d9a3a3;
+            --toast-warning-bg: #5a5a2b;
+            --toast-warning-border: #7c7c3d;
+            --toast-warning-text: #d9d9a3;
+            --toast-info-bg: #2b3a5a;
+            --toast-info-border: #3d4d7c;
+            --toast-info-text: #a3b3d9;
+        }
+
+        /* Smooth theme transitions */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--text-primary) !important;
+        }
+
+        .navbar-dark {
+            background-color: var(--bg-secondary) !important;
+        }
+
+        .feature-card {
+            border: none;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: 0 2px 10px var(--shadow-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px var(--shadow-hover);
+        }
+
+        .graph-container {
+            height: 600px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            position: relative;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 10px;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--primary);
+        }
+
+        .theme-toggle i {
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-pending { background-color: #6c757d; }
+        .status-running { background-color: #ffc107; animation: pulse 1s infinite; }
+        .status-completed { background-color: #28a745; }
+        .status-failed { background-color: #dc3545; }
+        .status-skipped { background-color: #17a2b8; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .execution-panel {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .node-details {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+
+        .creator-panel {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .node-palette {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px;
+            cursor: grab;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .node-palette:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-hover);
+        }
+
+        .node-palette:active {
+            transform: translateY(0);
+        }
+
+        .node-palette.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+
+        .node-palette.disabled:hover {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Enhanced Modal Styling */
+        .modal-content {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            border-radius: 0 0 12px 12px;
+        }
+
+        .form-control, .form-select {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary), 0.25);
+        }
+
+        .form-label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .form-text {
+            color: var(--text-secondary);
+        }
+
+        /* Enhanced Connection ports with better UX */
+        .connection-port {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #007bff;
+            border: 2px solid white;
+            cursor: crosshair;
+            opacity: 0.7; /* Always visible but subtle */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            /* Remove CSS positioning - will be handled by JavaScript */
+        }
+
+        .connection-port:hover {
+            transform: scale(1.4);
+            opacity: 1;
+            box-shadow: 0 0 16px rgba(0, 123, 255, 0.8);
+            border-width: 3px;
+            cursor: grab;
+        }
+
+        .connection-port.input {
+            background: #28a745;
+        }
+
+        .connection-port.input:hover {
+            box-shadow: 0 0 16px rgba(40, 167, 69, 0.8);
+        }
+
+        .connection-port.output {
+            background: #dc3545;
+        }
+
+        .connection-port.output:hover {
+            box-shadow: 0 0 16px rgba(220, 53, 69, 0.8);
+        }
+
+        .connection-port.connecting {
+            opacity: 1;
+            transform: scale(1.3);
+            animation: pulse-port 1.5s infinite;
+        }
+
+        @keyframes pulse-port {
+            0%, 100% { box-shadow: 0 0 8px rgba(220, 53, 69, 0.6); }
+            50% { box-shadow: 0 0 20px rgba(220, 53, 69, 1); }
+        }
+
+        .node-hover .connection-port {
+            opacity: 1;
+        }
+
+        .node-selected {
+            border: 3px solid #007bff !important;
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.5) !important;
+        }
+
+        .node-selected .connection-port {
+            opacity: 1;
+        }
+
+        .connection-target-valid {
+            border: 3px solid #28a745 !important;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.5) !important;
+        }
+
+        .connection-preview {
+            stroke: #007bff;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 8, 4;
+            animation: dash 1s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -12; }
+        }
+
+        @keyframes portPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .connection-preview {
+            stroke: var(--connection-preview);
+            stroke-width: 3;
+            stroke-dasharray: 8,4;
+            fill: none;
+            pointer-events: none;
+            opacity: 0.8;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+            animation: connectionPulse 1.5s ease-in-out infinite;
+        }
+
+        .connection-ghost {
+            stroke: var(--connection-ghost);
+            stroke-width: 2;
+            stroke-dasharray: 4,4;
+            fill: none;
+            pointer-events: none;
+            opacity: 0.6;
+            animation: connectionFlow 2s linear infinite;
+        }
+
+        @keyframes connectionPulse {
+            0%, 100% { opacity: 0.8; stroke-width: 3; }
+            50% { opacity: 1; stroke-width: 4; }
+        }
+
+        @keyframes connectionFlow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: 16; }
+        }
+
+        /* Enhanced Connection Mode Indicators */
+        .connection-mode-active {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: fadeInScale 0.3s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Node Selection Indicators */
+        .node-selected-for-connection {
+            animation: nodeSelectionPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes nodeSelectionPulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--primary); }
+            50% { box-shadow: 0 0 0 8px rgba(var(--primary), 0.3); }
+        }
+
+        /* Connection Success Feedback */
+        .connection-success-line {
+            stroke: var(--success);
+            stroke-width: 4;
+            opacity: 1;
+            animation: connectionSuccess 0.6s ease-out;
+        }
+
+        @keyframes connectionSuccess {
+            0% { stroke-width: 8; opacity: 0.3; }
+            50% { stroke-width: 6; opacity: 0.8; }
+            100% { stroke-width: 2; opacity: 1; }
+        }
+
+        .yaml-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            padding: 20px 0;
+        }
+
+        .alert-dismissible {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-project-diagram me-2"></i>
+                Spring AI Agents Visualization
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text" id="connectionStatus">
+                    <i class="fas fa-circle text-success me-1"></i>
+                    Connected
+                </span>
+                <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Feature Toggle Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card feature-card" id="graphStructureCard">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sitemap fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">Graph Structure</h5>
+                        <p class="card-text">Visualize workflow graph structure and dependencies</p>
+                        <span class="badge bg-secondary" id="graphStructureStatus">Disabled</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card" id="realTimeStatusCard">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">Real-time Status</h5>
+                        <p class="card-text">Track execution status in real-time</p>
+                        <span class="badge bg-secondary" id="realTimeStatusStatus">Disabled</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card" id="interactiveCreatorCard">
+                    <div class="card-body text-center">
+                        <i class="fas fa-edit fa-2x text-warning mb-2"></i>
+                        <h5 class="card-title">Interactive Creator</h5>
+                        <p class="card-text">Create graph workflows interactively</p>
+                        <span class="badge bg-secondary" id="interactiveCreatorStatus">Disabled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Tabs -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="structure-tab" data-bs-toggle="tab" data-bs-target="#structure" type="button" role="tab">
+                    <i class="fas fa-sitemap me-1"></i>Graph Structure
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button" role="tab">
+                    <i class="fas fa-chart-line me-1"></i>Execution Status
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="creator-tab" data-bs-toggle="tab" data-bs-target="#creator" type="button" role="tab">
+                    <i class="fas fa-edit me-1"></i>Graph Creator
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabContent">
+            <!-- Graph Structure Tab -->
+            <div class="tab-pane fade show active" id="structure" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Available Agents</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="agentsList" class="list-group list-group-flush">
+                                    <!-- Agents will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Graph Visualization</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" id="fitGraphBtn">
+                                        <i class="fas fa-expand-arrows-alt"></i> Fit
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="refreshGraphBtn">
+                                        <i class="fas fa-sync"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="graphVisualization" class="graph-container">
+                                    <div class="d-flex justify-content-center align-items-center h-100">
+                                        <div class="text-muted">
+                                            <i class="fas fa-mouse-pointer fa-2x mb-2"></i>
+                                            <p>Select an agent to view its graph structure</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution Status Tab -->
+            <div class="tab-pane fade" id="status" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Active Executions</h6>
+                            </div>
+                            <div class="card-body execution-panel" id="activeExecutions">
+                                <!-- Active executions will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Execution History</h6>
+                            </div>
+                            <div class="card-body execution-panel" id="executionHistory">
+                                <!-- Execution history will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Execution Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="executionDetails">
+                                    <div class="text-muted text-center">
+                                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                        <p>Select an execution to view details</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph Creator Tab -->
+            <div class="tab-pane fade" id="creator" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="creator-panel">
+                            <h6>Node Palette</h6>
+                            <div id="nodePalette">
+                                <!-- Node types will be loaded here -->
+                            </div>
+
+                            <h6 class="mt-4">Templates</h6>
+                            <div id="templatesList">
+                                <!-- Templates will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="creator-panel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Graph Designer</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" id="connectModeBtn" title="Toggle connection mode">
+                                        <i class="fas fa-link"></i> Connect
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" id="autoArrangeBtn" title="Auto arrange nodes">
+                                        <i class="fas fa-sitemap"></i> Arrange
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" id="fitToViewBtn" title="Fit all nodes to view">
+                                        <i class="fas fa-expand-arrows-alt"></i> Fit
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" id="validateGraphBtn">
+                                        <i class="fas fa-check"></i> Validate
+                                    </button>
+                                    <button class="btn btn-sm btn-success" id="generateYamlBtn">
+                                        <i class="fas fa-download"></i> Generate YAML
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="graphDesigner" class="graph-container">
+                                <!-- Graph designer will be here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="creator-panel">
+                            <h6>Properties</h6>
+                            <form id="graphPropertiesForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Agent Name</label>
+                                    <input type="text" class="form-control" id="agentName" placeholder="my-agent">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">System Prompt</label>
+                                    <textarea class="form-control" id="systemPrompt" rows="3" placeholder="You are a helpful assistant..."></textarea>
+                                </div>
+                            </form>
+
+                            <h6 class="mt-4">Validation Results</h6>
+                            <div id="validationResults">
+                                <div class="text-muted">
+                                    <small>Click validate to check your graph</small>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-4">Generated YAML</h6>
+                            <div id="yamlOutput" class="yaml-output" style="display: none;">
+                                <!-- YAML output will be here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Node Configuration Modal -->
+    <div class="modal fade" id="nodeConfigModal" tabindex="-1" aria-labelledby="nodeConfigModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="nodeConfigModalLabel">Edit Node Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="nodeConfigForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nodeId" class="form-label">Node ID</label>
+                                    <input type="text" class="form-control" id="nodeId" required>
+                                    <div class="form-text">Unique identifier for this node</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nodeType" class="form-label">Node Type</label>
+                                    <select class="form-select" id="nodeType">
+                                        <option value="input">Input Node</option>
+                                        <option value="output">Output Node</option>
+                                        <option value="prompt">Prompt Node</option>
+                                        <option value="tool">Tool Node</option>
+                                        <option value="conditional">Conditional Node</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="promptSection">
+                            <label for="nodePrompt" class="form-label">Prompt</label>
+                            <textarea class="form-control" id="nodePrompt" rows="3" placeholder="Enter the AI prompt for this node..."></textarea>
+                            <div class="form-text">Use {input} for input data and {nodeId} for referencing other nodes</div>
+                        </div>
+
+                        <div class="mb-3" id="toolSection" style="display: none;">
+                            <label for="nodeTool" class="form-label">Tool Name</label>
+                            <input type="text" class="form-control" id="nodeTool" placeholder="tool_name">
+                            <div class="form-text">Name of the MCP tool to execute</div>
+                        </div>
+
+                        <div class="mb-3" id="inputSection" style="display: none;">
+                            <label for="nodeInputSchema" class="form-label">Input Schema (Optional)</label>
+                            <textarea class="form-control" id="nodeInputSchema" rows="2" placeholder="JSON schema for input validation"></textarea>
+                            <div class="form-text">Define the expected structure of input data</div>
+                        </div>
+
+                        <div class="mb-3" id="outputSection" style="display: none;">
+                            <label for="nodeOutputFormat" class="form-label">Output Format (Optional)</label>
+                            <input type="text" class="form-control" id="nodeOutputFormat" placeholder="json, text, markdown">
+                            <div class="form-text">Specify the format of the output data</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nodeDependencies" class="form-label">Dependencies</label>
+                            <input type="text" class="form-control" id="nodeDependencies" placeholder="node1, node2, node3">
+                            <div class="form-text">Comma-separated list of node IDs this node depends on</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nodeDescription" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="nodeDescription" placeholder="Brief description of this node's purpose">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveNodeConfig">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/vis-network/dist/vis-network.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <script>
+        // Global variables
+        let graphNetwork = null;
+        let designerNetwork = null;
+        let stompClient = null;
+        let config = {};
+        let currentExecutionId = null;
+
+        // Graph designer state
+        let connectionMode = false;
+        let selectedNodeForConnection = null;
+
+        // Theme Management System
+        function initializeTheme() {
+            // Get saved theme or default to light
+            const savedTheme = localStorage.getItem('visualization-theme') || 'light';
+            applyTheme(savedTheme);
+
+            // Add theme toggle event listener
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (theme === 'dark') {
+                themeIcon.className = 'fas fa-sun';
+                themeIcon.parentElement.title = 'Switch to light mode';
+            } else {
+                themeIcon.className = 'fas fa-moon';
+                themeIcon.parentElement.title = 'Switch to dark mode';
+            }
+
+            // Update vis.js network colors if networks exist
+            updateNetworkTheme(theme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            applyTheme(newTheme);
+            localStorage.setItem('visualization-theme', newTheme);
+
+            // Show feedback
+            showAlert(`Switched to ${newTheme} mode`, 'success', 1500);
+        }
+
+        function updateNetworkTheme(theme) {
+            const isDark = theme === 'dark';
+
+            // Update graph visualization network
+            if (graphNetwork) {
+                const options = {
+                    nodes: {
+                        color: {
+                            background: isDark ? '#2d2d2d' : '#ffffff',
+                            border: isDark ? '#404040' : '#dee2e6'
+                        },
+                        font: {
+                            color: isDark ? '#ffffff' : '#212529'
+                        }
+                    },
+                    edges: {
+                        color: {
+                            color: isDark ? '#b0b0b0' : '#848484'
+                        }
+                    }
+                };
+                graphNetwork.setOptions(options);
+            }
+
+            // Update designer network
+            if (designerNetwork) {
+                const options = {
+                    nodes: {
+                        color: {
+                            background: isDark ? '#2d2d2d' : '#ffffff',
+                            border: isDark ? '#404040' : '#dee2e6'
+                        },
+                        font: {
+                            color: isDark ? '#ffffff' : '#212529'
+                        }
+                    },
+                    edges: {
+                        color: {
+                            color: isDark ? '#b0b0b0' : '#848484'
+                        }
+                    }
+                };
+                designerNetwork.setOptions(options);
+            }
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize theme system first
+            initializeTheme();
+
+            // Load configuration first and wait for it to complete
+            await loadConfiguration();
+
+            // Now load dependent components that rely on config
+            initializeWebSocket();
+            loadAgents();
+            loadNodeTypes();
+            loadTemplates();
+
+            // Load initial execution status
+            setTimeout(() => {
+                updateActiveExecutions();
+                updateExecutionHistory();
+            }, 1000);
+
+            // Event listeners
+            document.getElementById('fitGraphBtn').addEventListener('click', fitGraph);
+            document.getElementById('refreshGraphBtn').addEventListener('click', refreshGraph);
+            document.getElementById('validateGraphBtn').addEventListener('click', validateGraph);
+            document.getElementById('generateYamlBtn').addEventListener('click', generateYaml);
+
+            // Graph designer event listeners
+            document.getElementById('connectModeBtn').addEventListener('click', toggleConnectionMode);
+            document.getElementById('autoArrangeBtn').addEventListener('click', autoArrangeNodes);
+            document.getElementById('fitToViewBtn').addEventListener('click', fitDesignerToView);
+
+            // Node configuration modal event listeners
+            document.getElementById('nodeType').addEventListener('change', handleNodeTypeChange);
+            document.getElementById('saveNodeConfig').addEventListener('click', saveNodeConfiguration);
+
+            // Tab change listeners
+            document.getElementById('status-tab').addEventListener('shown.bs.tab', function() {
+                updateActiveExecutions();
+                updateExecutionHistory();
+            });
+        });
+
+        // Load configuration and update UI
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/visualization/config');
+                config = await response.json();
+
+                updateFeatureStatus('graphStructure', config.graphStructureEnabled);
+                updateFeatureStatus('realTimeStatus', config.realTimeStatusEnabled);
+                updateFeatureStatus('interactiveCreator', config.interactiveCreatorEnabled);
+
+                // Enable/disable tabs based on configuration
+                toggleTab('structure-tab', config.graphStructureEnabled);
+                toggleTab('status-tab', config.realTimeStatusEnabled);
+                toggleTab('creator-tab', config.interactiveCreatorEnabled);
+
+            } catch (error) {
+                console.error('Failed to load configuration:', error);
+                showAlert('Failed to load configuration', 'danger');
+            }
+        }
+
+        // Update feature status indicators
+        function updateFeatureStatus(feature, enabled) {
+            const statusElement = document.getElementById(feature + 'Status');
+            const cardElement = document.getElementById(feature + 'Card');
+
+            if (enabled) {
+                statusElement.textContent = 'Enabled';
+                statusElement.className = 'badge bg-success';
+                cardElement.classList.remove('opacity-50');
+            } else {
+                statusElement.textContent = 'Disabled';
+                statusElement.className = 'badge bg-secondary';
+                cardElement.classList.add('opacity-50');
+            }
+        }
+
+        // Toggle tab visibility
+        function toggleTab(tabId, enabled) {
+            const tab = document.getElementById(tabId);
+            if (tab) {
+                tab.style.display = enabled ? 'block' : 'none';
+                if (!enabled && tab.classList.contains('active')) {
+                    // Switch to first available tab
+                    const firstTab = document.querySelector('.nav-link:not([style*="display: none"])');
+                    if (firstTab) {
+                        firstTab.click();
+                    }
+                }
+            }
+        }
+
+        // Initialize WebSocket connection
+        function initializeWebSocket() {
+            if (!config.realTimeStatusEnabled) return;
+
+            const socket = new SockJS('/ws/status');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function(frame) {
+                console.log('Connected to WebSocket');
+                updateConnectionStatus(true);
+
+                // Subscribe to execution updates
+                stompClient.subscribe('/topic/executions', function(message) {
+                    const execution = JSON.parse(message.body);
+                    updateExecutionDisplay(execution);
+                });
+
+            }, function(error) {
+                console.error('WebSocket connection error:', error);
+                updateConnectionStatus(false);
+            });
+        }
+
+        // Update connection status indicator
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            if (connected) {
+                statusElement.innerHTML = '<i class="fas fa-circle text-success me-1"></i>Connected';
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-circle text-danger me-1"></i>Disconnected';
+            }
+        }
+
+        // Load available agents
+        async function loadAgents() {
+            if (!config.graphStructureEnabled) return;
+
+            try {
+                const response = await fetch('/visualization/agents');
+                const agents = await response.json();
+
+                const agentsList = document.getElementById('agentsList');
+                agentsList.innerHTML = '';
+
+                agents.forEach(agent => {
+                    const agentElement = document.createElement('a');
+                    agentElement.className = 'list-group-item list-group-item-action';
+                    agentElement.href = '#';
+                    agentElement.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${agent.name}</h6>
+                            <small class="text-muted">${agent.nodeCount} nodes</small>
+                        </div>
+                        <p class="mb-1">${agent.workflowType}</p>
+                        <small class="text-muted">${agent.systemPrompt ? agent.systemPrompt.substring(0, 50) + '...' : 'No system prompt'}</small>
+                    `;
+
+                    agentElement.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        loadAgentGraph(agent.name);
+
+                        // Update active state
+                        document.querySelectorAll('#agentsList .list-group-item').forEach(item => {
+                            item.classList.remove('active');
+                        });
+                        agentElement.classList.add('active');
+                    });
+
+                    agentsList.appendChild(agentElement);
+                });
+
+            } catch (error) {
+                console.error('Failed to load agents:', error);
+                showAlert('Failed to load agents', 'danger');
+            }
+        }
+
+        // Load and display agent graph
+        async function loadAgentGraph(agentName) {
+            try {
+                const response = await fetch(`/visualization/graphs/${agentName}`);
+                if (!response.ok) {
+                    throw new Error('Agent not found');
+                }
+
+                const graphData = await response.json();
+                displayGraph(graphData);
+
+            } catch (error) {
+                console.error('Failed to load agent graph:', error);
+                showAlert(`Failed to load graph for ${agentName}`, 'danger');
+            }
+        }
+
+        // Display graph using vis.js
+        function displayGraph(graphData) {
+            const container = document.getElementById('graphVisualization');
+
+            // Prepare nodes
+            const nodes = graphData.nodes.map(node => ({
+                id: node.id,
+                label: node.label,
+                title: node.description,
+                color: getNodeColor(node.type),
+                shape: getNodeShape(node.type),
+                font: { size: 12 }
+            }));
+
+            // Prepare edges
+            const edges = graphData.edges.map(edge => ({
+                from: edge.source,
+                to: edge.target,
+                arrows: 'to',
+                color: { color: '#848484' }
+            }));
+
+            const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+
+            const options = {
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'directed',
+                        levelSeparation: 100,
+                        nodeSpacing: 150
+                    }
+                },
+                physics: {
+                    enabled: false
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true
+                }
+            };
+
+            if (graphNetwork) {
+                graphNetwork.destroy();
+            }
+
+            graphNetwork = new vis.Network(container, data, options);
+
+            // Add click event for node details
+            graphNetwork.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const node = graphData.nodes.find(n => n.id === nodeId);
+                    showNodeDetails(node);
+                }
+            });
+        }
+
+        // Get node color based on type
+        function getNodeColor(type) {
+            const colors = {
+                'input': '#2ecc71',        // Green for entry point
+                'output': '#e74c3c',       // Red for exit point
+                'prompt': '#3498db',       // Blue for prompts
+                'tool': '#9b59b6',         // Purple for tools
+                'conditional': '#f39c12',  // Orange for conditionals
+                'conditional_then': '#27ae60',
+                'conditional_else': '#e67e22'
+            };
+            return colors[type] || '#95a5a6';
+        }
+
+        // Get node shape based on type
+        function getNodeShape(type) {
+            const shapes = {
+                'input': 'circle',         // Circle for entry point
+                'output': 'square',        // Square for exit point
+                'prompt': 'box',           // Box for prompts
+                'tool': 'diamond',         // Diamond for tools
+                'conditional': 'triangle', // Triangle for conditionals
+                'conditional_then': 'box',
+                'conditional_else': 'box'
+            };
+            return shapes[type] || 'ellipse';
+        }
+
+        // Show node details
+        function showNodeDetails(node) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Node Details: ${node.label}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Node ID:</strong> ${node.id}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Type:</strong> ${node.type}
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <strong>Description:</strong><br>
+                                    ${node.description || 'No description available'}
+                                </div>
+                            </div>
+                            ${node.properties ? `
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <strong>Properties:</strong>
+                                        <pre class="bg-light p-2 mt-1">${JSON.stringify(node.properties, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+
+            // Remove modal from DOM when hidden
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+            });
+        }
+
+        // Fit graph to container
+        function fitGraph() {
+            if (graphNetwork) {
+                graphNetwork.fit();
+            }
+        }
+
+        // Refresh graph
+        function refreshGraph() {
+            const activeAgent = document.querySelector('#agentsList .list-group-item.active');
+            if (activeAgent) {
+                const agentName = activeAgent.querySelector('h6').textContent;
+                loadAgentGraph(agentName);
+            }
+        }
+
+        // Load node types for creator
+        async function loadNodeTypes() {
+            if (!config.interactiveCreatorEnabled) return;
+
+            try {
+                const response = await fetch('/visualization/creator/node-types');
+                const nodeTypes = await response.json();
+
+                const palette = document.getElementById('nodePalette');
+                palette.innerHTML = '';
+
+                // Filter out input/output node types - these are now default nodes that users cannot create
+                const availableNodeTypes = nodeTypes.filter(nodeType => 
+                    nodeType.type !== 'input' && nodeType.type !== 'output'
+                );
+
+                availableNodeTypes.forEach(nodeType => {
+                    // Validate nodeType properties to prevent undefined nodes
+                    if (!nodeType.type || !nodeType.name || !nodeType.description) {
+                        console.warn('Skipping invalid node type:', nodeType);
+                        return;
+                    }
+                    
+                    const nodeElement = document.createElement('div');
+                    nodeElement.className = 'node-palette';
+                    nodeElement.innerHTML = `
+                        <strong>${nodeType.name}</strong>
+                        <br><small class="text-muted">${nodeType.description}</small>
+                    `;
+                    nodeElement.draggable = true;
+                    nodeElement.dataset.nodeType = nodeType.type;
+                    nodeElement.dataset.nodeName = nodeType.name;
+                    nodeElement.dataset.nodeDescription = nodeType.description;
+
+                    // Add drag event handlers
+                    nodeElement.addEventListener('dragstart', handleNodeDragStart);
+                    nodeElement.addEventListener('click', handleNodeClick);
+
+                    palette.appendChild(nodeElement);
+                });
+
+            } catch (error) {
+                console.error('Failed to load node types:', error);
+            }
+        }
+
+        // Handle drag start from node palette
+        function handleNodeDragStart(event) {
+            const nodeData = {
+                type: event.target.dataset.nodeType,
+                name: event.target.dataset.nodeName,
+                description: event.target.dataset.nodeDescription
+            };
+            event.dataTransfer.setData('application/json', JSON.stringify(nodeData));
+            event.dataTransfer.effectAllowed = 'copy';
+        }
+
+        // Handle click on node palette (alternative to drag)
+        function handleNodeClick(event) {
+            const nodeData = {
+                type: event.target.dataset.nodeType,
+                name: event.target.dataset.nodeName,
+                description: event.target.dataset.nodeDescription
+            };
+            addNodeToDesigner(nodeData);
+        }
+
+        // Add node to the designer with connection ports
+        function addNodeToDesigner(nodeData) {
+            if (!designerNetwork) {
+                initializeDesigner();
+            }
+
+            // Validate nodeData to prevent undefined nodes
+            if (!nodeData || !nodeData.type || !nodeData.name || !nodeData.description) {
+                console.error('Invalid nodeData provided to addNodeToDesigner:', nodeData);
+                showAlert('Cannot create node: Invalid node data', 'error');
+                return;
+            }
+
+            const nodeId = 'node_' + Date.now();
+            const newNode = {
+                id: nodeId,
+                label: nodeData.name,
+                title: nodeData.description,
+                color: getNodeColor(nodeData.type),
+                shape: getNodeShape(nodeData.type),
+                font: { size: 12 },
+                borderWidth: 2,
+                borderWidthSelected: 3,
+                nodeData: {
+                    type: nodeData.type,
+                    prompt: `${nodeData.name} prompt: {input}`,
+                    tool: nodeData.type === 'tool' ? 'example_tool' : null
+                }
+            };
+
+            // Add node to the network
+            const nodes = designerNetwork.body.data.nodes;
+            nodes.add(newNode);
+
+            // Add connection ports after node is rendered
+            setTimeout(() => {
+                addConnectionPorts(nodeId);
+            }, 100);
+
+            showAlert(`Added ${nodeData.name} to designer`, 'success');
+        }
+
+        // Add connection ports to a node
+        function addConnectionPorts(nodeId) {
+            if (!designerNetwork) return;
+
+            const nodePosition = designerNetwork.getPositions([nodeId])[nodeId];
+            if (!nodePosition) return;
+
+            const container = document.getElementById('graphDesigner');
+
+            // Determine node type for directional constraints
+            const isInputNode = nodeId === 'input_node';
+            const isOutputNode = nodeId === 'output_node';
+
+            let inputPort = null;
+            let outputPort = null;
+
+            // Create input port (left side) - only for OUTPUT nodes and regular nodes
+            if (!isInputNode) {
+                inputPort = document.createElement('div');
+                inputPort.className = 'connection-port input';
+                inputPort.dataset.nodeId = nodeId;
+                inputPort.dataset.portType = 'input';
+                inputPort.title = 'Input port - drag from output ports to connect';
+            }
+
+            // Create output port (right side) - only for INPUT nodes and regular nodes
+            if (!isOutputNode) {
+                outputPort = document.createElement('div');
+                outputPort.className = 'connection-port output';
+                outputPort.dataset.nodeId = nodeId;
+                outputPort.dataset.portType = 'output';
+                outputPort.title = 'Output port - drag to input ports to connect';
+
+                // Add drag event handlers for connection creation
+                outputPort.addEventListener('mousedown', startPortConnection);
+                outputPort.addEventListener('dragstart', e => e.preventDefault());
+            }
+
+            // Use alternative coordinate calculation approach to fix positioning
+            // Get the network's view position and scale for accurate coordinate conversion
+            const viewPosition = designerNetwork.getViewPosition();
+            const scale = designerNetwork.getScale();
+            
+            // Get node bounding box to determine node dimensions in canvas coordinates
+            const nodeBoundingBox = designerNetwork.getBoundingBox(nodeId);
+            const nodeWidth = Math.abs(nodeBoundingBox.right - nodeBoundingBox.left);
+            const nodeHeight = Math.abs(nodeBoundingBox.bottom - nodeBoundingBox.top);
+            
+            // Calculate container center coordinates
+            const containerCenterX = container.clientWidth / 2;
+            const containerCenterY = container.clientHeight / 2;
+            
+            // Convert canvas position to container-relative position
+            const nodeX = containerCenterX + (nodePosition.x - viewPosition.x) * scale;
+            const nodeY = containerCenterY + (nodePosition.y - viewPosition.y) * scale;
+            
+            // Calculate node dimensions in DOM coordinates
+            const domNodeWidth = nodeWidth * scale;
+            const domNodeHeight = nodeHeight * scale;
+            
+            // Position and append ports only if they were created
+            if (inputPort) {
+                // Position input port on the left edge of the node, vertically centered
+                inputPort.style.left = (nodeX - domNodeWidth/2 - 6) + 'px';  // 6px left of node edge (port radius)
+                inputPort.style.top = (nodeY - 6) + 'px';  // Vertically centered (port radius)
+                container.appendChild(inputPort);
+            }
+            
+            if (outputPort) {
+                // Position output port on the right edge of the node, vertically centered
+                outputPort.style.left = (nodeX + domNodeWidth/2 - 6) + 'px';  // 6px right of node edge (port radius)
+                outputPort.style.top = (nodeY - 6) + 'px';  // Vertically centered (port radius)
+                container.appendChild(outputPort);
+            }
+
+            // Store port references (may be null for directional constraints)
+            if (!window.nodePorts) window.nodePorts = {};
+            window.nodePorts[nodeId] = { input: inputPort, output: outputPort };
+        }
+
+        // Connection state management
+        let connectionState = {
+            isConnecting: false,
+            sourceNode: null,
+            sourcePort: null,
+            previewLine: null
+        };
+
+        // Enhanced port connection start with better feedback
+        function startPortConnection(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const port = event.target;
+            const nodeId = port.dataset.nodeId;
+
+            connectionState.isConnecting = true;
+            connectionState.sourceNode = nodeId;
+            connectionState.sourcePort = port;
+
+            // Create preview line
+            createConnectionPreview();
+
+            // Add global mouse move and up handlers
+            document.addEventListener('mousemove', updateConnectionPreview);
+            document.addEventListener('mouseup', endPortConnection);
+
+            // Enhanced visual feedback for source port
+            port.style.transform = 'scale(1.4)';
+            port.style.boxShadow = '0 0 16px rgba(220, 53, 69, 1)';
+            port.style.zIndex = '20';
+            
+            // Highlight source node
+            const nodes = designerNetwork.body.data.nodes;
+            nodes.update({
+                id: nodeId,
+                borderWidth: 3,
+                borderColor: '#dc3545',
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(220, 53, 69, 0.4)',
+                    size: 12,
+                    x: 0,
+                    y: 0
+                }
+            });
+
+            // Make all input ports more visible to show valid targets
+            document.querySelectorAll('.connection-port.input').forEach(inputPort => {
+                inputPort.style.opacity = '1';
+                inputPort.style.transform = 'scale(1.1)';
+                inputPort.style.boxShadow = '0 0 8px rgba(40, 167, 69, 0.6)';
+            });
+
+            showConnectionFeedback('🎯 Drag to a green input port to create connection, or press ESC to cancel', 'info');
+        }
+
+        // Create SVG preview line
+        function createConnectionPreview() {
+            const container = document.getElementById('graphDesigner');
+
+            // Create SVG overlay if it doesn't exist
+            let svg = container.querySelector('.connection-preview-svg');
+            if (!svg) {
+                svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.className = 'connection-preview-svg';
+                svg.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 5;
+                `;
+                container.appendChild(svg);
+            }
+
+            // Create preview line
+            connectionState.previewLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            connectionState.previewLine.className = 'connection-preview';
+            svg.appendChild(connectionState.previewLine);
+        }
+
+        // Update connection preview during mouse move
+        function updateConnectionPreview(event) {
+            if (!connectionState.isConnecting || !connectionState.previewLine) return;
+
+            const container = document.getElementById('graphDesigner');
+            const containerRect = container.getBoundingClientRect();
+            const sourceRect = connectionState.sourcePort.getBoundingClientRect();
+
+            const startX = sourceRect.left - containerRect.left + 6;
+            const startY = sourceRect.top - containerRect.top + 6;
+            const endX = event.clientX - containerRect.left;
+            const endY = event.clientY - containerRect.top;
+
+            // Create curved path
+            const controlX1 = startX + (endX - startX) * 0.5;
+            const controlY1 = startY;
+            const controlX2 = startX + (endX - startX) * 0.5;
+            const controlY2 = endY;
+
+            const pathData = `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`;
+            connectionState.previewLine.setAttribute('d', pathData);
+
+            // Check if hovering over input port
+            const targetElement = document.elementFromPoint(event.clientX, event.clientY);
+            if (targetElement && targetElement.classList.contains('connection-port') &&
+                targetElement.dataset.portType === 'input' &&
+                targetElement.dataset.nodeId !== connectionState.sourceNode) {
+
+                connectionState.previewLine.style.stroke = '#28a745';
+                targetElement.style.transform = 'scale(1.3)';
+                targetElement.style.boxShadow = '0 0 12px rgba(40, 167, 69, 0.8)';
+            } else {
+                connectionState.previewLine.style.stroke = '#007bff';
+                // Reset any highlighted input ports
+                document.querySelectorAll('.connection-port.input').forEach(port => {
+                    if (port !== connectionState.sourcePort) {
+                        port.style.transform = '';
+                        port.style.boxShadow = '';
+                    }
+                });
+            }
+        }
+
+        // End connection attempt
+        function endPortConnection(event) {
+            if (!connectionState.isConnecting) return;
+
+            const targetElement = document.elementFromPoint(event.clientX, event.clientY);
+
+            // Check if dropped on valid input port
+            if (targetElement && targetElement.classList.contains('connection-port') &&
+                targetElement.dataset.portType === 'input' &&
+                targetElement.dataset.nodeId !== connectionState.sourceNode) {
+
+                const targetNodeId = targetElement.dataset.nodeId;
+                createEdgeBetweenNodes(connectionState.sourceNode, targetNodeId);
+                showConnectionFeedback(`Connected ${connectionState.sourceNode} → ${targetNodeId}`, 'success');
+            }
+
+            // Cleanup
+            cleanupConnectionState();
+
+            // Remove global handlers
+            document.removeEventListener('mousemove', updateConnectionPreview);
+            document.removeEventListener('mouseup', endPortConnection);
+        }
+
+        // Enhanced cleanup connection state
+        function cleanupConnectionState() {
+            // Remove preview line
+            if (connectionState.previewLine) {
+                connectionState.previewLine.remove();
+            }
+
+            // Reset all port styles to default
+            document.querySelectorAll('.connection-port').forEach(port => {
+                port.style.transform = '';
+                port.style.boxShadow = '';
+                port.style.zIndex = '10'; // Reset to default z-index
+                
+                // Reset opacity based on connection mode
+                if (connectionMode) {
+                    port.style.opacity = '1'; // Keep visible in connection mode
+                } else {
+                    port.style.opacity = '0.7'; // Default subtle visibility
+                }
+            });
+
+            // Reset source node highlighting if it exists
+            if (connectionState.sourceNode && designerNetwork) {
+                const nodes = designerNetwork.body.data.nodes;
+                nodes.update({
+                    id: connectionState.sourceNode,
+                    borderWidth: 2,
+                    borderColor: undefined,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.2)',
+                        size: 8,
+                        x: 2,
+                        y: 2
+                    }
+                });
+            }
+
+            // Reset state
+            connectionState = {
+                isConnecting: false,
+                sourceNode: null,
+                sourcePort: null,
+                previewLine: null
+            };
+            
+            // Clear any connection feedback
+            if (!connectionMode) {
+                showConnectionFeedback('', 'info');
+            }
+        }
+
+        // Helper function to get node DOM element (vis.js doesn't provide direct access)
+        function getNodeElement(nodeId) {
+            // Since vis.js renders to canvas, we'll use our port system to track nodes
+            return window.nodePorts && window.nodePorts[nodeId] ?
+                   window.nodePorts[nodeId].input.parentElement : null;
+        }
+
+        // Show/hide connection ports for a node
+        function showConnectionPorts(nodeId, show) {
+            if (!window.nodePorts || !window.nodePorts[nodeId]) return;
+
+            const ports = window.nodePorts[nodeId];
+            const opacity = show ? '1' : '0';
+
+            if (ports.input) {
+                ports.input.style.opacity = opacity;
+            }
+            if (ports.output) {
+                ports.output.style.opacity = opacity;
+            }
+        }
+
+        // Connection hint state
+        let connectionHint = {
+            line: null,
+            isVisible: false
+        };
+
+        // Show connection hint between two nodes
+        function showConnectionHint(fromNodeId, toNodeId) {
+            if (!window.nodePorts || !window.nodePorts[fromNodeId] || !window.nodePorts[toNodeId]) return;
+
+            hideConnectionHint(); // Clear any existing hint
+
+            const container = document.getElementById('graphDesigner');
+            let svg = container.querySelector('.connection-preview-svg');
+            if (!svg) {
+                svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.className = 'connection-preview-svg';
+                svg.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 5;
+                `;
+                container.appendChild(svg);
+            }
+
+            // Get port positions
+            const fromPort = window.nodePorts[fromNodeId].output;
+            const toPort = window.nodePorts[toNodeId].input;
+            const containerRect = container.getBoundingClientRect();
+            const fromRect = fromPort.getBoundingClientRect();
+            const toRect = toPort.getBoundingClientRect();
+
+            const startX = fromRect.left - containerRect.left + 6;
+            const startY = fromRect.top - containerRect.top + 6;
+            const endX = toRect.left - containerRect.left + 6;
+            const endY = toRect.top - containerRect.top + 6;
+
+            // Create curved path for hint
+            const controlX1 = startX + (endX - startX) * 0.5;
+            const controlY1 = startY;
+            const controlX2 = startX + (endX - startX) * 0.5;
+            const controlY2 = endY;
+
+            const pathData = `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`;
+
+            // Create hint line
+            connectionHint.line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            connectionHint.line.className = 'connection-ghost';
+            connectionHint.line.setAttribute('d', pathData);
+            svg.appendChild(connectionHint.line);
+
+            connectionHint.isVisible = true;
+        }
+
+        // Hide connection hint
+        function hideConnectionHint() {
+            if (connectionHint.line) {
+                connectionHint.line.remove();
+                connectionHint.line = null;
+            }
+            connectionHint.isVisible = false;
+        }
+
+        // Update port positions when nodes move
+        function updatePortPositions() {
+            if (!window.nodePorts || !designerNetwork) return;
+
+            Object.keys(window.nodePorts).forEach(nodeId => {
+                const nodePosition = designerNetwork.getPositions([nodeId])[nodeId];
+                if (!nodePosition) return;
+
+                const container = document.getElementById('graphDesigner');
+
+                // Use same alternative coordinate calculation approach as addConnectionPorts
+                // Get the network's view position and scale for accurate coordinate conversion
+                const viewPosition = designerNetwork.getViewPosition();
+                const scale = designerNetwork.getScale();
+                
+                // Get node bounding box to determine node dimensions in canvas coordinates
+                const nodeBoundingBox = designerNetwork.getBoundingBox(nodeId);
+                const nodeWidth = Math.abs(nodeBoundingBox.right - nodeBoundingBox.left);
+                const nodeHeight = Math.abs(nodeBoundingBox.bottom - nodeBoundingBox.top);
+                
+                // Calculate container center coordinates
+                const containerCenterX = container.clientWidth / 2;
+                const containerCenterY = container.clientHeight / 2;
+                
+                // Convert canvas position to container-relative position
+                const nodeX = containerCenterX + (nodePosition.x - viewPosition.x) * scale;
+                const nodeY = containerCenterY + (nodePosition.y - viewPosition.y) * scale;
+                
+                // Calculate node dimensions in DOM coordinates
+                const domNodeWidth = nodeWidth * scale;
+                const domNodeHeight = nodeHeight * scale;
+
+                const ports = window.nodePorts[nodeId];
+                if (ports.input) {
+                    // Position input port on the left edge of the node, vertically centered
+                    ports.input.style.left = (nodeX - domNodeWidth/2 - 6) + 'px';  // 6px left of node edge (port radius)
+                    ports.input.style.top = (nodeY - 6) + 'px';  // Vertically centered (port radius)
+                }
+                if (ports.output) {
+                    // Position output port on the right edge of the node, vertically centered
+                    ports.output.style.left = (nodeX + domNodeWidth/2 - 6) + 'px';  // 6px right of node edge (port radius)
+                    ports.output.style.top = (nodeY - 6) + 'px';  // Vertically centered (port radius)
+                }
+            });
+        }
+
+        // Initialize the designer network
+        function initializeDesigner() {
+            const container = document.getElementById('graphDesigner');
+            
+            // Create default input and output nodes
+            const defaultNodes = [
+                {
+                    id: 'input_node',
+                    label: 'Input',
+                    title: 'Graph input node - receives initial data',
+                    color: getNodeColor('input'),
+                    shape: getNodeShape('input'),
+                    font: { size: 12 },
+                    borderWidth: 2,
+                    borderWidthSelected: 3,
+                    x: -200,
+                    y: 0,
+                    nodeData: {
+                        type: 'input',
+                        prompt: 'Input node: {input}',
+                        tool: null
+                    }
+                },
+                {
+                    id: 'output_node',
+                    label: 'Output',
+                    title: 'Graph output node - returns final result',
+                    color: getNodeColor('output'),
+                    shape: getNodeShape('output'),
+                    font: { size: 12 },
+                    borderWidth: 2,
+                    borderWidthSelected: 3,
+                    x: 200,
+                    y: 0,
+                    nodeData: {
+                        type: 'output',
+                        prompt: 'Output node: {input}',
+                        tool: null,
+                        dependsOn: []
+                    }
+                }
+            ];
+            
+            const data = {
+                nodes: new vis.DataSet(defaultNodes),
+                edges: new vis.DataSet([])
+            };
+
+            const options = {
+                layout: {
+                    hierarchical: false,
+                    randomSeed: undefined,
+                    improvedLayout: true
+                },
+                physics: {
+                    enabled: false // Disable physics for clean graphing tool behavior
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true,
+                    selectConnectedEdges: false,
+                    hover: true,
+                    hoverConnectedEdges: true,
+                    tooltipDelay: 300,
+                    multiselect: true,
+                    keyboard: {
+                        enabled: true,
+                        speed: {x: 10, y: 10, zoom: 0.02},
+                        bindToWindow: false
+                    },
+                    navigationButtons: false,
+                    zoomSpeed: 1
+                },
+                manipulation: {
+                    enabled: false
+                },
+                nodes: {
+                    borderWidth: 2,
+                    borderWidthSelected: 3,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.2)',
+                        size: 8,
+                        x: 2,
+                        y: 2
+                    },
+                    font: {
+                        size: 12,
+                        face: 'Arial',
+                        strokeWidth: 0,
+                        align: 'center'
+                    },
+                    margin: 10,
+                    widthConstraint: {
+                        minimum: 80,
+                        maximum: 200
+                    },
+                    heightConstraint: {
+                        minimum: 40
+                    },
+                    chosen: {
+                        node: function(values, id, selected, hovering) {
+                            values.borderWidth = 3;
+                            values.borderColor = '#007bff';
+                        }
+                    }
+                },
+                edges: {
+                    width: 2,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.1)',
+                        size: 5,
+                        x: 1,
+                        y: 1
+                    },
+                    smooth: {
+                        enabled: true,
+                        type: 'dynamic',
+                        forceDirection: 'none',
+                        roundness: 0.5
+                    },
+                    arrows: {
+                        to: {
+                            enabled: true,
+                            scaleFactor: 1.2,
+                            type: 'arrow'
+                        }
+                    },
+                    chosen: {
+                        edge: function(values, id, selected, hovering) {
+                            values.width = 3;
+                            values.color = '#007bff';
+                        }
+                    }
+                }
+            };
+
+            designerNetwork = new vis.Network(container, data, options);
+
+            // Add event listeners for designer
+            setupDesignerEventHandlers();
+
+            // Add drop support to designer
+            container.addEventListener('dragover', handleDesignerDragOver);
+            container.addEventListener('drop', handleDesignerDrop);
+
+            // Update port positions when nodes are moved or network is stabilized
+            designerNetwork.on('dragEnd', updatePortPositions);
+            designerNetwork.on('stabilizationIterationsDone', updatePortPositions);
+            designerNetwork.on('zoom', updatePortPositions);
+            designerNetwork.on('pan', updatePortPositions);
+
+            // Add connection ports to default INPUT and OUTPUT nodes after network is rendered
+            setTimeout(() => {
+                addConnectionPorts('input_node');
+                addConnectionPorts('output_node');
+            }, 100);
+        }
+
+        // Setup event handlers for the designer
+        function setupDesignerEventHandlers() {
+            let dragStartNode = null;
+            let isDraggingForConnection = false;
+
+            // Handle node selection
+            designerNetwork.on('selectNode', function(params) {
+                console.log('Node selected:', params.nodes);
+
+                // Handle connection mode
+                if (connectionMode && params.nodes.length > 0) {
+                    handleConnectionModeClick(params.nodes[0]);
+                }
+            });
+
+            // Handle double-click for node editing - Enhanced with better detection
+            designerNetwork.on('doubleClick', function(params) {
+                console.log('Double-click detected:', params);
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    console.log('Editing node:', nodeId);
+                    editNodeConfiguration(nodeId);
+                } else {
+                    console.log('No node found for double-click');
+                }
+            });
+
+            // Handle edge selection for deletion
+            designerNetwork.on('selectEdge', function(params) {
+                console.log('Edge selected:', params.edges);
+            });
+
+            // Handle drag start for connection
+            designerNetwork.on('dragStart', function(params) {
+                if (params.nodes.length > 0) {
+                    dragStartNode = params.nodes[0];
+
+                    // Check if Ctrl key is held for connection drag
+                    if (params.event.srcEvent && params.event.srcEvent.ctrlKey) {
+                        isDraggingForConnection = true;
+                        showConnectionFeedback('Drag to another node to create connection', 'info');
+
+                        // Highlight the source node with animation
+                        const nodes = designerNetwork.body.data.nodes;
+                        nodes.update({
+                            id: dragStartNode,
+                            borderWidth: 4,
+                            borderColor: '#28a745',
+                            shadow: {
+                                enabled: true,
+                                color: 'rgba(40, 167, 69, 0.4)',
+                                size: 15,
+                                x: 0,
+                                y: 0
+                            }
+                        });
+
+                        // Create connection preview line
+                        createConnectionPreviewLine();
+                    }
+                }
+            });
+
+            // Handle drag end for connection
+            designerNetwork.on('dragEnd', function(params) {
+                if (isDraggingForConnection && dragStartNode) {
+                    // Get the node under the mouse cursor
+                    const pointer = designerNetwork.getPointer(params.event.srcEvent);
+                    const nodeId = designerNetwork.getNodeAt(pointer);
+
+                    if (nodeId && nodeId !== dragStartNode) {
+                        // Create connection between nodes with success animation
+                        createEdgeBetweenNodes(dragStartNode, nodeId);
+                        showConnectionSuccess(dragStartNode, nodeId);
+                    } else {
+                        showConnectionFeedback('Connection cancelled - drag to another node', 'warning');
+                    }
+
+                    // Remove highlight from source node
+                    const nodes = designerNetwork.body.data.nodes;
+                    nodes.update({
+                        id: dragStartNode,
+                        borderWidth: 2,
+                        borderColor: undefined,
+                        shadow: {
+                            enabled: true,
+                            color: 'rgba(0,0,0,0.2)',
+                            size: 8,
+                            x: 2,
+                            y: 2
+                        }
+                    });
+
+                    // Clean up connection preview
+                    removeConnectionPreviewLine();
+                    isDraggingForConnection = false;
+                    dragStartNode = null;
+                }
+            });
+
+            // Enhanced hover effects with connection ports
+            designerNetwork.on('hoverNode', function(params) {
+                const nodeElement = getNodeElement(params.node);
+                if (nodeElement) {
+                    nodeElement.classList.add('node-hover');
+                }
+
+                // Show connection ports on hover
+                showConnectionPorts(params.node, true);
+
+                if (connectionMode || isDraggingForConnection) {
+                    const nodes = designerNetwork.body.data.nodes;
+                    const node = nodes.get(params.node);
+                    if (!isDraggingForConnection || params.node !== dragStartNode) {
+                        nodes.update({
+                            id: params.node,
+                            borderWidth: 3,
+                            borderColor: connectionMode ? '#007bff' : '#ffc107'
+                        });
+                    }
+                }
+
+                // Show potential connections
+                if (connectionMode && selectedNodeForConnection && params.node !== selectedNodeForConnection) {
+                    showConnectionHint(selectedNodeForConnection, params.node);
+                }
+            });
+
+            // Handle hover leave with port cleanup
+            designerNetwork.on('blurNode', function(params) {
+                const nodeElement = getNodeElement(params.node);
+                if (nodeElement) {
+                    nodeElement.classList.remove('node-hover');
+                }
+
+                // Hide connection ports when not hovering
+                showConnectionPorts(params.node, false);
+
+                if (connectionMode || isDraggingForConnection) {
+                    const nodes = designerNetwork.body.data.nodes;
+                    const node = nodes.get(params.node);
+                    if (params.node !== selectedNodeForConnection &&
+                        (!isDraggingForConnection || params.node !== dragStartNode)) {
+                        nodes.update({
+                            id: params.node,
+                            borderWidth: 2,
+                            borderColor: undefined
+                        });
+                    }
+                }
+
+                // Hide connection hints
+                hideConnectionHint();
+            });
+
+            // Enhanced keyboard events for deletion and connection management
+            const handleKeyDown = function(event) {
+                // Only handle if the designer is active and focused
+                if (!designerNetwork) return;
+                
+                // Check if we're not in an input field
+                const activeElement = document.activeElement;
+                if (activeElement && (
+                    activeElement.tagName === 'INPUT' || 
+                    activeElement.tagName === 'TEXTAREA' ||
+                    activeElement.contentEditable === 'true'
+                )) {
+                    return; // Don't interfere with text input
+                }
+                
+                // Handle ESC key for connection cancellation
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    if (connectionMode && selectedNodeForConnection) {
+                        clearNodeSelection();
+                        showConnectionFeedback('Connection cancelled. Press ESC again to exit connection mode.', 'info');
+                    } else if (connectionMode) {
+                        toggleConnectionMode(); // Exit connection mode
+                        showConnectionFeedback('Connection mode disabled.', 'info');
+                    }
+                    return;
+                }
+                
+                // Handle Delete/Backspace for node deletion
+                if (event.key === 'Delete' || event.key === 'Backspace') {
+                    event.preventDefault();
+                    console.log('Delete key pressed, calling deleteSelectedElements');
+                    deleteSelectedElements();
+                }
+            };
+            
+            // Add event listener with proper cleanup
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // Store reference for cleanup if needed
+            if (!window.designerKeyHandlers) window.designerKeyHandlers = [];
+            window.designerKeyHandlers.push(handleKeyDown);
+
+            // Handle right-click context menu for connections
+            designerNetwork.on('oncontext', function(params) {
+                params.event.preventDefault();
+
+                const nodeId = designerNetwork.getNodeAt(params.pointer.DOM);
+                if (nodeId) {
+                    showNodeContextMenu(nodeId, params.pointer.DOM);
+                }
+            });
+        }
+
+        // Enhanced node selection and connection handling
+        function handleConnectionModeClick(nodeId) {
+            console.log('Connection mode click on node:', nodeId, 'Current selected:', selectedNodeForConnection);
+            
+            if (!connectionMode) {
+                console.log('Connection mode is not active');
+                return;
+            }
+            
+            if (!selectedNodeForConnection) {
+                // First node selected - validate source node
+                if (nodeId === 'output_node') {
+                    showConnectionFeedback('OUTPUT nodes can only receive connections, not send them', 'error');
+                    return;
+                }
+                
+                selectedNodeForConnection = nodeId;
+                console.log('Selected first node for connection:', nodeId);
+                showConnectionFeedback(`Selected source node: ${nodeId}. Click another node to connect, or press ESC to cancel.`, 'info');
+
+                // Add visual selection class
+                addNodeSelectionClass(nodeId);
+                
+                // Make output port pulse to indicate it's the source
+                const ports = window.nodePorts[nodeId];
+                if (ports && ports.output) {
+                    ports.output.classList.add('connecting');
+                }
+                
+            } else if (selectedNodeForConnection === nodeId) {
+                // Same node clicked - deselect
+                console.log('Deselecting node:', nodeId);
+                clearNodeSelection();
+                showConnectionFeedback('Node deselected. Connection cancelled.', 'info');
+                
+            } else {
+                // Second node selected - validate target node
+                if (nodeId === 'input_node') {
+                    showConnectionFeedback('INPUT nodes can only send connections, not receive them', 'error');
+                    return;
+                }
+                
+                // Create edge
+                console.log('Creating connection from', selectedNodeForConnection, 'to', nodeId);
+                
+                try {
+                    createEdgeBetweenNodes(selectedNodeForConnection, nodeId);
+                    showConnectionFeedback(`Successfully connected ${selectedNodeForConnection} → ${nodeId}`, 'success');
+                    clearNodeSelection();
+                } catch (error) {
+                    console.error('Error creating connection:', error);
+                    showConnectionFeedback('Failed to create connection: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Add visual selection styling to node via vis.js
+        function addNodeSelectionClass(nodeId) {
+            // Remove selection from all nodes first
+            clearAllNodeSelections();
+            
+            // Apply selection styling through vis.js network
+            const nodes = designerNetwork.body.data.nodes;
+            nodes.update({
+                id: nodeId,
+                borderWidth: 4,
+                borderColor: '#007bff',
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0, 123, 255, 0.5)',
+                    size: 15,
+                    x: 0,
+                    y: 0
+                }
+            });
+        }
+
+        // Clear selection from specific node
+        function clearNodeSelection() {
+            if (selectedNodeForConnection) {
+                // Reset node styling through vis.js
+                const nodes = designerNetwork.body.data.nodes;
+                nodes.update({
+                    id: selectedNodeForConnection,
+                    borderWidth: 2,
+                    borderColor: undefined,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.2)',
+                        size: 8,
+                        x: 2,
+                        y: 2
+                    }
+                });
+                
+                // Remove connecting class from ports
+                const ports = window.nodePorts[selectedNodeForConnection];
+                if (ports && ports.output) {
+                    ports.output.classList.remove('connecting');
+                }
+                
+                selectedNodeForConnection = null;
+            }
+            hideConnectionHint();
+        }
+
+        // Clear selection from all nodes
+        function clearAllNodeSelections() {
+            if (!designerNetwork) return;
+            
+            const nodes = designerNetwork.body.data.nodes;
+            const allNodes = nodes.get();
+            
+            // Reset all nodes to default styling
+            allNodes.forEach(node => {
+                if (node.borderWidth > 2) {
+                    nodes.update({
+                        id: node.id,
+                        borderWidth: 2,
+                        borderColor: undefined,
+                        shadow: {
+                            enabled: true,
+                            color: 'rgba(0,0,0,0.2)',
+                            size: 8,
+                            x: 2,
+                            y: 2
+                        }
+                    });
+                }
+            });
+            
+            // Remove connecting class from all ports
+            document.querySelectorAll('.connection-port.connecting').forEach(port => {
+                port.classList.remove('connecting');
+            });
+        }
+
+        // Create edge between two nodes
+        function createEdgeBetweenNodes(fromNodeId, toNodeId) {
+            const edges = designerNetwork.body.data.edges;
+            const nodes = designerNetwork.body.data.nodes;
+
+            // Check if edge already exists
+            const existingEdges = edges.get();
+            const edgeExists = existingEdges.some(edge =>
+                edge.from === fromNodeId && edge.to === toNodeId
+            );
+
+            if (edgeExists) {
+                showAlert('Edge already exists between these nodes', 'warning');
+                return;
+            }
+
+            // Create new edge
+            const edgeId = `edge_${fromNodeId}_${toNodeId}`;
+            const newEdge = {
+                id: edgeId,
+                from: fromNodeId,
+                to: toNodeId,
+                arrows: 'to',
+                color: { color: '#848484' }
+            };
+
+            edges.add(newEdge);
+
+            // Update node dependencies
+            const toNode = nodes.get(toNodeId);
+            if (toNode.nodeData) {
+                if (!toNode.nodeData.dependsOn) {
+                    toNode.nodeData.dependsOn = [];
+                }
+                if (!toNode.nodeData.dependsOn.includes(fromNodeId)) {
+                    toNode.nodeData.dependsOn.push(fromNodeId);
+                }
+
+                // Update the node in the dataset
+                nodes.update({
+                    id: toNodeId,
+                    nodeData: toNode.nodeData
+                });
+            }
+
+            showAlert(`Connected ${fromNodeId} → ${toNodeId}`, 'success');
+        }
+
+        // Delete selected nodes and edges - Enhanced with better error handling
+        function deleteSelectedElements() {
+            console.log('deleteSelectedElements called');
+            
+            if (!designerNetwork) {
+                console.log('No designer network available');
+                showAlert('Graph designer not initialized', 'error');
+                return;
+            }
+
+            try {
+                const selectedNodes = designerNetwork.getSelectedNodes();
+                const selectedEdges = designerNetwork.getSelectedEdges();
+                
+                console.log('Selected nodes:', selectedNodes);
+                console.log('Selected edges:', selectedEdges);
+
+                if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+                    showAlert('No elements selected for deletion. Click on nodes or edges to select them first.', 'warning');
+                    return;
+                }
+
+                // Prevent deletion of default input and output nodes
+                const protectedNodes = ['input_node', 'output_node'];
+                const protectedNodesSelected = selectedNodes.filter(nodeId => protectedNodes.includes(nodeId));
+                
+                if (protectedNodesSelected.length > 0) {
+                    const nodeNames = protectedNodesSelected.map(nodeId => 
+                        nodeId === 'input_node' ? 'Input' : 'Output'
+                    ).join(' and ');
+                    showAlert(`Cannot delete ${nodeNames} node(s): These are required default nodes that cannot be removed`, 'error');
+                    return;
+                }
+
+                let deleteMessage = '';
+                if (selectedNodes.length > 0) {
+                    deleteMessage += `${selectedNodes.length} node(s)`;
+                }
+                if (selectedEdges.length > 0) {
+                    if (deleteMessage) deleteMessage += ' and ';
+                    deleteMessage += `${selectedEdges.length} edge(s)`;
+                }
+
+                // Confirm deletion
+                if (confirm(`Delete ${deleteMessage}?`)) {
+                    const nodes = designerNetwork.body.data.nodes;
+                    const edges = designerNetwork.body.data.edges;
+
+                    // Remove selected edges first
+                    if (selectedEdges.length > 0) {
+                        console.log('Removing selected edges:', selectedEdges);
+                        
+                        // Get edge data before removal for dependency updates
+                        const edgeData = selectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+                        
+                        edges.remove(selectedEdges);
+
+                        // Update node dependencies
+                        edgeData.forEach(edge => {
+                            const toNode = nodes.get(edge.to);
+                            if (toNode && toNode.nodeData && toNode.nodeData.dependsOn) {
+                                toNode.nodeData.dependsOn = toNode.nodeData.dependsOn.filter(dep => dep !== edge.from);
+                                nodes.update({
+                                    id: edge.to,
+                                    nodeData: toNode.nodeData
+                                });
+                            }
+                        });
+                    }
+
+                    // Remove selected nodes and their connected edges
+                    if (selectedNodes.length > 0) {
+                        console.log('Removing selected nodes:', selectedNodes);
+                        
+                        const connectedEdges = [];
+                        selectedNodes.forEach(nodeId => {
+                            const nodeEdges = designerNetwork.getConnectedEdges(nodeId);
+                            connectedEdges.push(...nodeEdges);
+                        });
+
+                        // Get edge data before removal for dependency updates
+                        const connectedEdgeData = connectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+
+                        // Remove connected edges and update dependencies
+                        connectedEdgeData.forEach(edge => {
+                            if (edge && !selectedNodes.includes(edge.to)) {
+                                const toNode = nodes.get(edge.to);
+                                if (toNode && toNode.nodeData && toNode.nodeData.dependsOn) {
+                                    toNode.nodeData.dependsOn = toNode.nodeData.dependsOn.filter(dep => dep !== edge.from);
+                                    nodes.update({
+                                        id: edge.to,
+                                        nodeData: toNode.nodeData
+                                    });
+                                }
+                            }
+                        });
+
+                        edges.remove(connectedEdges);
+                        nodes.remove(selectedNodes);
+                        
+                        // Clean up any connection ports for deleted nodes
+                        selectedNodes.forEach(nodeId => {
+                            if (window.nodePorts && window.nodePorts[nodeId]) {
+                                if (window.nodePorts[nodeId].input) {
+                                    window.nodePorts[nodeId].input.remove();
+                                }
+                                if (window.nodePorts[nodeId].output) {
+                                    window.nodePorts[nodeId].output.remove();
+                                }
+                                delete window.nodePorts[nodeId];
+                            }
+                        });
+                    }
+
+                    showAlert(`Successfully deleted ${deleteMessage}`, 'success');
+                    console.log('Deletion completed successfully');
+                }
+            } catch (error) {
+                console.error('Error during deletion:', error);
+                showAlert('Error occurred during deletion: ' + error.message, 'error');
+            }
+        }
+
+        // Handle drag over designer
+        function handleDesignerDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+        }
+
+        // Handle drop on designer
+        function handleDesignerDrop(event) {
+            event.preventDefault();
+            try {
+                const nodeData = JSON.parse(event.dataTransfer.getData('application/json'));
+                addNodeToDesigner(nodeData);
+            } catch (error) {
+                console.error('Failed to parse dropped data:', error);
+            }
+        }
+
+        // Delete selected nodes
+        function deleteSelectedNodes() {
+            if (!designerNetwork) return;
+
+            const selectedNodes = designerNetwork.getSelectedNodes();
+            if (selectedNodes.length === 0) {
+                showAlert('No nodes selected for deletion', 'warning');
+                return;
+            }
+
+            // Prevent deletion of default input and output nodes
+            const protectedNodes = ['input_node', 'output_node'];
+            const protectedNodesSelected = selectedNodes.filter(nodeId => protectedNodes.includes(nodeId));
+            
+            if (protectedNodesSelected.length > 0) {
+                const nodeNames = protectedNodesSelected.map(nodeId => 
+                    nodeId === 'input_node' ? 'Input' : 'Output'
+                ).join(' and ');
+                showAlert(`Cannot delete ${nodeNames} node(s): These are required default nodes that cannot be removed`, 'error');
+                return;
+            }
+
+            // Confirm deletion
+            if (confirm(`Delete ${selectedNodes.length} selected node(s)?`)) {
+                const nodes = designerNetwork.body.data.nodes;
+                const edges = designerNetwork.body.data.edges;
+
+                // Remove connected edges first
+                const connectedEdges = [];
+                selectedNodes.forEach(nodeId => {
+                    const nodeEdges = designerNetwork.getConnectedEdges(nodeId);
+                    connectedEdges.push(...nodeEdges);
+                });
+
+                // Remove edges and nodes
+                edges.remove(connectedEdges);
+                nodes.remove(selectedNodes);
+
+                showAlert(`Deleted ${selectedNodes.length} node(s)`, 'success');
+            }
+        }
+
+        // Edit node configuration (comprehensive modal-based editing)
+        let currentEditingNodeId = null;
+
+        function editNodeConfiguration(nodeId) {
+            if (!designerNetwork) return;
+
+            const nodes = designerNetwork.body.data.nodes;
+            const node = nodes.get(nodeId);
+
+            if (!node) {
+                showConnectionFeedback('Node not found for editing', 'error');
+                return;
+            }
+
+            currentEditingNodeId = nodeId;
+
+            // Add visual feedback - highlight the node being edited
+            nodes.update({
+                id: nodeId,
+                borderWidth: 3,
+                borderColor: '#007bff',
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(0, 123, 255, 0.3)',
+                    size: 12,
+                    x: 0,
+                    y: 0
+                }
+            });
+
+            // Populate modal with current node data with smooth transitions
+            const modal = document.getElementById('nodeConfigModal');
+            modal.style.opacity = '0';
+            modal.style.transform = 'scale(0.9)';
+
+            document.getElementById('nodeId').value = node.id || '';
+            document.getElementById('nodeDescription').value = node.title || '';
+
+            // Determine node type and populate fields
+            const nodeData = node.nodeData || {};
+            let nodeType = 'prompt';
+
+            if (nodeData.tool) {
+                nodeType = 'tool';
+                document.getElementById('nodeTool').value = nodeData.tool;
+            } else if (nodeData.type === 'conditional') {
+                nodeType = 'conditional';
+            } else if (nodeData.type === 'input') {
+                nodeType = 'input';
+            } else if (nodeData.type === 'output') {
+                nodeType = 'output';
+            }
+
+            document.getElementById('nodeType').value = nodeType;
+            document.getElementById('nodePrompt').value = nodeData.prompt || '';
+
+            // Disable nodeType dropdown if editing INPUT/OUTPUT nodes
+            const nodeTypeDropdown = document.getElementById('nodeType');
+            if (nodeType === 'input' || nodeType === 'output') {
+                nodeTypeDropdown.disabled = true;
+                nodeTypeDropdown.title = 'Cannot change type of INPUT/OUTPUT nodes';
+            } else {
+                nodeTypeDropdown.disabled = false;
+                nodeTypeDropdown.title = '';
+            }
+
+            // Handle dependencies
+            if (nodeData.dependsOn && Array.isArray(nodeData.dependsOn)) {
+                document.getElementById('nodeDependencies').value = nodeData.dependsOn.join(', ');
+            } else {
+                document.getElementById('nodeDependencies').value = '';
+            }
+
+            // Update form sections visibility
+            handleNodeTypeChange();
+
+            // Show modal with smooth animation
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+
+            // Add smooth entrance animation
+            setTimeout(() => {
+                modal.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+            }, 100);
+
+            // Add event listener for modal close to remove highlight
+            modal.addEventListener('hidden.bs.modal', function() {
+                if (currentEditingNodeId) {
+                    nodes.update({
+                        id: currentEditingNodeId,
+                        borderWidth: 2,
+                        borderColor: undefined,
+                        shadow: {
+                            enabled: true,
+                            color: 'rgba(0,0,0,0.2)',
+                            size: 8,
+                            x: 2,
+                            y: 2
+                        }
+                    });
+                }
+            }, { once: true });
+
+            showConnectionFeedback(`Editing node: ${nodeId}`, 'info');
+        }
+
+        // Handle node type change in modal
+        function handleNodeTypeChange() {
+            const nodeType = document.getElementById('nodeType').value;
+            const promptSection = document.getElementById('promptSection');
+            const toolSection = document.getElementById('toolSection');
+            const inputSection = document.getElementById('inputSection');
+            const outputSection = document.getElementById('outputSection');
+            const dependenciesField = document.getElementById('nodeDependencies');
+            const dependenciesLabel = dependenciesField.parentElement.querySelector('label');
+
+            // Hide all sections first
+            promptSection.style.display = 'none';
+            toolSection.style.display = 'none';
+            inputSection.style.display = 'none';
+            outputSection.style.display = 'none';
+
+            // Show appropriate section based on node type
+            if (nodeType === 'input') {
+                inputSection.style.display = 'block';
+                dependenciesField.disabled = true;
+                dependenciesField.value = '';
+                dependenciesField.placeholder = 'Input nodes have no dependencies';
+                dependenciesLabel.textContent = 'Dependencies (Not applicable for input nodes)';
+            } else if (nodeType === 'output') {
+                outputSection.style.display = 'block';
+                dependenciesField.disabled = false;
+                dependenciesField.placeholder = 'node1, node2, node3 (required for output nodes)';
+                dependenciesLabel.textContent = 'Dependencies (Required for output nodes)';
+            } else if (nodeType === 'tool') {
+                toolSection.style.display = 'block';
+                dependenciesField.disabled = false;
+                dependenciesField.placeholder = 'node1, node2, node3';
+                dependenciesLabel.textContent = 'Dependencies';
+            } else {
+                promptSection.style.display = 'block';
+                dependenciesField.disabled = false;
+                dependenciesField.placeholder = 'node1, node2, node3';
+                dependenciesLabel.textContent = 'Dependencies';
+            }
+        }
+
+        // Save node configuration from modal
+        function saveNodeConfiguration() {
+            if (!currentEditingNodeId || !designerNetwork) return;
+
+            // Get form values
+            const newNodeId = document.getElementById('nodeId').value.trim();
+            const nodeType = document.getElementById('nodeType').value;
+            const nodePrompt = document.getElementById('nodePrompt').value.trim();
+            const nodeTool = document.getElementById('nodeTool').value.trim();
+            const nodeDependencies = document.getElementById('nodeDependencies').value.trim();
+            const nodeDescription = document.getElementById('nodeDescription').value.trim();
+
+            // Validate required fields
+            if (!newNodeId) {
+                showAlert('Node ID is required', 'danger');
+                return;
+            }
+
+            if (nodeType === 'prompt' && !nodePrompt) {
+                showAlert('Prompt is required for prompt nodes', 'danger');
+                return;
+            }
+
+            if (nodeType === 'tool' && !nodeTool) {
+                showAlert('Tool name is required for tool nodes', 'danger');
+                return;
+            }
+
+            // Validate INPUT/OUTPUT node specific requirements
+            if (nodeType === 'output' && !nodeDependencies) {
+                showAlert('Output nodes must have at least one dependency', 'danger');
+                return;
+            }
+
+            // Check for unique INPUT/OUTPUT nodes
+            const allNodes = designerNetwork.body.data.nodes.get();
+            const existingInputNodes = allNodes.filter(node => 
+                node.nodeData && node.nodeData.type === 'input' && node.id !== currentEditingNodeId
+            );
+            const existingOutputNodes = allNodes.filter(node => 
+                node.nodeData && node.nodeData.type === 'output' && node.id !== currentEditingNodeId
+            );
+
+            if (nodeType === 'input' && existingInputNodes.length > 0) {
+                showAlert('Only one INPUT node is allowed per graph. Existing INPUT node: ' + existingInputNodes[0].id, 'danger');
+                return;
+            }
+
+            if (nodeType === 'output' && existingOutputNodes.length > 0) {
+                showAlert('Only one OUTPUT node is allowed per graph. Existing OUTPUT node: ' + existingOutputNodes[0].id, 'danger');
+                return;
+            }
+
+            // Check for duplicate node ID (if changed)
+            if (newNodeId !== currentEditingNodeId) {
+                const nodes = designerNetwork.body.data.nodes;
+                const existingNode = nodes.get(newNodeId);
+                if (existingNode) {
+                    showAlert('Node ID already exists', 'danger');
+                    return;
+                }
+            }
+
+            // Parse dependencies (INPUT nodes should not have dependencies)
+            let dependsOn = [];
+            if (nodeDependencies && nodeType !== 'input') {
+                dependsOn = nodeDependencies.split(',').map(dep => dep.trim()).filter(dep => dep);
+            }
+
+            // Get INPUT/OUTPUT specific fields
+            const nodeInputSchema = document.getElementById('nodeInputSchema').value.trim();
+            const nodeOutputFormat = document.getElementById('nodeOutputFormat').value.trim();
+
+            // Create updated node data
+            const nodeData = {
+                type: nodeType,
+                prompt: nodeType === 'prompt' ? nodePrompt : null,
+                tool: nodeType === 'tool' ? nodeTool : null,
+                inputSchema: nodeType === 'input' && nodeInputSchema ? nodeInputSchema : null,
+                outputFormat: nodeType === 'output' && nodeOutputFormat ? nodeOutputFormat : null,
+                dependsOn: dependsOn.length > 0 ? dependsOn : null
+            };
+
+            // Update node in network
+            const nodes = designerNetwork.body.data.nodes;
+            const edges = designerNetwork.body.data.edges;
+
+            // If node ID changed, update all references
+            if (newNodeId !== currentEditingNodeId) {
+                // Update edges that reference this node
+                const allEdges = edges.get();
+                const edgesToUpdate = [];
+
+                allEdges.forEach(edge => {
+                    if (edge.from === currentEditingNodeId) {
+                        edgesToUpdate.push({
+                            id: edge.id,
+                            from: newNodeId,
+                            to: edge.to,
+                            arrows: edge.arrows,
+                            color: edge.color
+                        });
+                    }
+                    if (edge.to === currentEditingNodeId) {
+                        edgesToUpdate.push({
+                            id: edge.id,
+                            from: edge.from,
+                            to: newNodeId,
+                            arrows: edge.arrows,
+                            color: edge.color
+                        });
+                    }
+                });
+
+                // Update edges
+                if (edgesToUpdate.length > 0) {
+                    edges.update(edgesToUpdate);
+                }
+
+                // Update dependencies in other nodes
+                const allNodes = nodes.get();
+                const nodesToUpdate = [];
+
+                allNodes.forEach(node => {
+                    if (node.nodeData && node.nodeData.dependsOn) {
+                        const updatedDeps = node.nodeData.dependsOn.map(dep =>
+                            dep === currentEditingNodeId ? newNodeId : dep
+                        );
+                        if (JSON.stringify(updatedDeps) !== JSON.stringify(node.nodeData.dependsOn)) {
+                            nodesToUpdate.push({
+                                id: node.id,
+                                nodeData: {
+                                    ...node.nodeData,
+                                    dependsOn: updatedDeps
+                                }
+                            });
+                        }
+                    }
+                });
+
+                if (nodesToUpdate.length > 0) {
+                    nodes.update(nodesToUpdate);
+                }
+
+                // Remove old node and add new one
+                nodes.remove(currentEditingNodeId);
+            }
+
+            // Update/add the node
+            const updatedNode = {
+                id: newNodeId,
+                label: newNodeId,
+                title: nodeDescription || nodeData.type + ' node',
+                color: getNodeColor(nodeType),
+                shape: getNodeShape(nodeType),
+                font: { size: 12 },
+                nodeData: nodeData
+            };
+
+            nodes.update(updatedNode);
+
+            // Validate graph constraints after node update
+            setTimeout(() => {
+                validateGraphConstraints();
+            }, 100);
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('nodeConfigModal'));
+            modal.hide();
+
+            currentEditingNodeId = null;
+            showAlert('Node configuration saved', 'success');
+        }
+
+        // Fit designer view to show all nodes
+        function fitDesignerToView() {
+            if (!designerNetwork) {
+                showAlert('No graph to fit', 'warning');
+                return;
+            }
+
+            const nodes = designerNetwork.body.data.nodes;
+            if (nodes.length === 0) {
+                showAlert('No nodes to fit', 'warning');
+                return;
+            }
+
+            // Fit the network to show all nodes with some padding
+            designerNetwork.fit({
+                animation: {
+                    duration: 500,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+
+            showAlert('View fitted to all nodes', 'success');
+        }
+
+        // Show context menu for node operations
+        function showNodeContextMenu(nodeId, position) {
+            // Remove any existing context menu
+            const existingMenu = document.getElementById('nodeContextMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+
+            // Calculate correct node position using the same approach as port positioning
+            const nodePosition = designerNetwork.getPositions([nodeId])[nodeId];
+            if (!nodePosition) return;
+
+            const container = document.getElementById('graphDesigner');
+            const containerRect = container.getBoundingClientRect();
+            
+            // Use the same coordinate calculation approach as the port positioning fix
+            const viewPosition = designerNetwork.getViewPosition();
+            const scale = designerNetwork.getScale();
+            
+            // Calculate container center coordinates
+            const containerCenterX = container.clientWidth / 2;
+            const containerCenterY = container.clientHeight / 2;
+            
+            // Convert canvas position to container-relative position
+            const nodeX = containerCenterX + (nodePosition.x - viewPosition.x) * scale;
+            const nodeY = containerCenterY + (nodePosition.y - viewPosition.y) * scale;
+            
+            // Convert to viewport coordinates for fixed positioning
+            const menuX = containerRect.left + nodeX;
+            const menuY = containerRect.top + nodeY;
+
+            // Create context menu
+            const menu = document.createElement('div');
+            menu.id = 'nodeContextMenu';
+            menu.style.cssText = `
+                position: fixed;
+                left: ${menuX}px;
+                top: ${menuY}px;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                z-index: 1000;
+                min-width: 150px;
+            `;
+
+            // Check if this is a protected INPUT/OUTPUT node
+            const isProtectedNode = nodeId === 'input_node' || nodeId === 'output_node';
+            
+            const menuItems = [
+                { text: 'Edit Node', icon: 'fas fa-edit', action: () => editNodeConfiguration(nodeId) }
+            ];
+            
+            // Add "Connect From Here" option for all nodes
+            menuItems.push({ text: 'Connect From Here', icon: 'fas fa-arrow-right', action: () => startConnectionFrom(nodeId) });
+            
+            // Only add "Delete Node" option for non-protected nodes
+            if (!isProtectedNode) {
+                menuItems.push({ text: 'Delete Node', icon: 'fas fa-trash', action: () => deleteNode(nodeId) });
+            }
+
+            menuItems.forEach(item => {
+                const menuItem = document.createElement('div');
+                menuItem.style.cssText = `
+                    padding: 8px 12px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #eee;
+                `;
+                menuItem.innerHTML = `<i class="${item.icon}"></i> ${item.text}`;
+
+                menuItem.addEventListener('mouseenter', () => {
+                    menuItem.style.backgroundColor = '#f0f0f0';
+                });
+
+                menuItem.addEventListener('mouseleave', () => {
+                    menuItem.style.backgroundColor = 'white';
+                });
+
+                menuItem.addEventListener('click', () => {
+                    item.action();
+                    menu.remove();
+                });
+
+                menu.appendChild(menuItem);
+            });
+
+            document.body.appendChild(menu);
+
+            // Remove menu when clicking elsewhere
+            setTimeout(() => {
+                document.addEventListener('click', function removeMenu() {
+                    menu.remove();
+                    document.removeEventListener('click', removeMenu);
+                }, 100);
+            });
+        }
+
+        // Start connection from a specific node
+        function startConnectionFrom(nodeId) {
+            // Block OUTPUT nodes from starting connections (they can only receive)
+            if (nodeId === 'output_node') {
+                showAlert('OUTPUT nodes can only receive connections, not send them', 'error');
+                return;
+            }
+            
+            connectionMode = true;
+            selectedNodeForConnection = nodeId;
+
+            // Update button state
+            const btn = document.getElementById('connectModeBtn');
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-secondary');
+            btn.innerHTML = '<i class="fas fa-link"></i> Connecting...';
+
+            // Highlight the selected node
+            const nodes = designerNetwork.body.data.nodes;
+            nodes.update({
+                id: nodeId,
+                borderWidth: 3,
+                borderColor: '#007bff'
+            });
+
+            showAlert(`Selected source node: ${nodeId}. Click another node to connect.`, 'info');
+        }
+
+        // Delete a single node
+        function deleteNode(nodeId) {
+            // Prevent deletion of protected INPUT/OUTPUT nodes
+            if (nodeId === 'input_node' || nodeId === 'output_node') {
+                const nodeType = nodeId === 'input_node' ? 'INPUT' : 'OUTPUT';
+                showAlert(`Cannot delete ${nodeType} node: This is a required default node that cannot be removed`, 'error');
+                return;
+            }
+            
+            if (confirm(`Delete node ${nodeId}?`)) {
+                const nodes = designerNetwork.body.data.nodes;
+                const edges = designerNetwork.body.data.edges;
+
+                // Remove connected edges first
+                const connectedEdges = designerNetwork.getConnectedEdges(nodeId);
+                edges.remove(connectedEdges);
+
+                // Remove the node
+                nodes.remove(nodeId);
+
+                showAlert(`Deleted node ${nodeId}`, 'success');
+            }
+        }
+
+        // Enhanced connection mode toggle with better UX
+        function toggleConnectionMode() {
+            connectionMode = !connectionMode;
+            
+            // Clear any existing selection when toggling
+            clearNodeSelection();
+
+            const btn = document.getElementById('connectModeBtn');
+            if (connectionMode) {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-secondary');
+                btn.innerHTML = '<i class="fas fa-link"></i> Connecting...';
+                btn.title = 'Click to exit connection mode (or press ESC)';
+                
+                // Make all connection ports more visible
+                document.querySelectorAll('.connection-port').forEach(port => {
+                    port.style.opacity = '1';
+                });
+                
+                showConnectionFeedback('🔗 Connection mode ON - Click nodes to connect, drag from red ports, or press ESC to cancel', 'info');
+            } else {
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-outline-secondary');
+                btn.innerHTML = '<i class="fas fa-link"></i> Connect';
+                btn.title = 'Enable connection mode to connect nodes';
+                
+                // Reset connection ports to default visibility
+                document.querySelectorAll('.connection-port').forEach(port => {
+                    port.style.opacity = '0.7';
+                });
+                
+                showConnectionFeedback('Connection mode OFF', 'success');
+
+                // Clear all selections and highlights
+                clearAllNodeSelections();
+                hideConnectionHint();
+            }
+        }
+
+        // Validate comprehensive graph constraints
+        function validateGraphConstraints() {
+            if (!designerNetwork) return true;
+
+            const nodes = designerNetwork.body.data.nodes;
+            const edges = designerNetwork.body.data.edges;
+            const allNodes = nodes.get();
+            const allEdges = edges.get();
+            
+            const inputNodes = allNodes.filter(node => node.nodeData && node.nodeData.type === 'input');
+            const outputNodes = allNodes.filter(node => node.nodeData && node.nodeData.type === 'output');
+            const processingNodes = allNodes.filter(node => node.nodeData && 
+                ['prompt', 'tool', 'conditional'].includes(node.nodeData.type));
+            
+            let isValid = true;
+            let messages = [];
+            
+            // Rule 1: Exactly 1 input and 1 output node
+            if (inputNodes.length === 0) {
+                messages.push('Graph must have exactly 1 INPUT node (currently has 0)');
+                isValid = false;
+            } else if (inputNodes.length > 1) {
+                messages.push(`Graph must have exactly 1 INPUT node (currently has ${inputNodes.length})`);
+                isValid = false;
+            }
+            
+            if (outputNodes.length === 0) {
+                messages.push('Graph must have exactly 1 OUTPUT node (currently has 0)');
+                isValid = false;
+            } else if (outputNodes.length > 1) {
+                messages.push(`Graph must have exactly 1 OUTPUT node (currently has ${outputNodes.length})`);
+                isValid = false;
+            }
+            
+            // Rule 2: Input node must have no inbound connections
+            if (inputNodes.length === 1) {
+                const inputNodeId = inputNodes[0].id;
+                const inboundEdges = allEdges.filter(edge => edge.to === inputNodeId);
+                if (inboundEdges.length > 0) {
+                    messages.push(`INPUT node must have no inbound connections (currently has ${inboundEdges.length})`);
+                    isValid = false;
+                }
+            }
+            
+            // Rule 3: Output node must have no outbound connections
+            if (outputNodes.length === 1) {
+                const outputNodeId = outputNodes[0].id;
+                const outboundEdges = allEdges.filter(edge => edge.from === outputNodeId);
+                if (outboundEdges.length > 0) {
+                    messages.push(`OUTPUT node must have no outbound connections (currently has ${outboundEdges.length})`);
+                    isValid = false;
+                }
+            }
+            
+            // Rule 4: Every prompt/tool/conditional node must have at least 1 input and 1 output connection
+            processingNodes.forEach(node => {
+                const inboundEdges = allEdges.filter(edge => edge.to === node.id);
+                const outboundEdges = allEdges.filter(edge => edge.from === node.id);
+                
+                if (inboundEdges.length === 0) {
+                    messages.push(`${node.nodeData.type.toUpperCase()} node '${node.id}' must have at least 1 input connection`);
+                    isValid = false;
+                }
+                
+                if (outboundEdges.length === 0) {
+                    messages.push(`${node.nodeData.type.toUpperCase()} node '${node.id}' must have at least 1 output connection`);
+                    isValid = false;
+                }
+            });
+            
+            // Rule 5: There must be a path from input node to output node
+            if (inputNodes.length === 1 && outputNodes.length === 1) {
+                const inputNodeId = inputNodes[0].id;
+                const outputNodeId = outputNodes[0].id;
+                
+                if (!hasPathBetweenNodes(inputNodeId, outputNodeId, allEdges)) {
+                    messages.push('There must be a path from INPUT node to OUTPUT node');
+                    isValid = false;
+                }
+            }
+            
+            if (!isValid) {
+                showAlert(messages.join('<br>'), 'error');
+            }
+            
+            return isValid;
+        }
+        
+        // Helper function to check if there's a path between two nodes
+        function hasPathBetweenNodes(startNodeId, endNodeId, edges) {
+            if (startNodeId === endNodeId) return true;
+            
+            const visited = new Set();
+            const queue = [startNodeId];
+            
+            while (queue.length > 0) {
+                const currentNode = queue.shift();
+                
+                if (visited.has(currentNode)) continue;
+                visited.add(currentNode);
+                
+                if (currentNode === endNodeId) return true;
+                
+                // Find all nodes that this node connects to
+                const outgoingEdges = edges.filter(edge => edge.from === currentNode);
+                outgoingEdges.forEach(edge => {
+                    if (!visited.has(edge.to)) {
+                        queue.push(edge.to);
+                    }
+                });
+            }
+            
+            return false;
+        }
+
+        // Auto arrange nodes using clean layout algorithms
+        function autoArrangeNodes() {
+            if (!designerNetwork) {
+                showAlert('No graph to arrange', 'warning');
+                return;
+            }
+
+            const nodes = designerNetwork.body.data.nodes;
+            const nodeIds = nodes.getIds();
+            if (nodeIds.length === 0) {
+                showAlert('No nodes to arrange', 'warning');
+                return;
+            }
+
+            // Get all nodes and arrange them in a clean grid or flow layout
+            const nodePositions = {};
+            
+            // Simple grid arrangement - no physics, no movement restrictions
+            const gridSize = Math.ceil(Math.sqrt(nodeIds.length));
+            const spacing = 200; // Space between nodes
+            const startX = -(gridSize - 1) * spacing / 2;
+            const startY = -(gridSize - 1) * spacing / 2;
+            
+            nodeIds.forEach((nodeId, index) => {
+                const row = Math.floor(index / gridSize);
+                const col = index % gridSize;
+                nodePositions[nodeId] = {
+                    x: startX + col * spacing,
+                    y: startY + row * spacing
+                };
+            });
+
+            // Apply positions without enabling physics or hierarchical constraints
+            designerNetwork.setOptions({
+                layout: {
+                    hierarchical: false
+                },
+                physics: {
+                    enabled: false // Keep physics disabled for clean behavior
+                }
+            });
+
+            // Set node positions using vis.js DataSet update method
+            const nodesToUpdate = [];
+            for (const nodeId in nodePositions) {
+                nodesToUpdate.push({
+                    id: nodeId,
+                    x: nodePositions[nodeId].x,
+                    y: nodePositions[nodeId].y
+                });
+            }
+            nodes.update(nodesToUpdate);
+            
+            showAlert('Nodes arranged in clean grid layout', 'success');
+
+            // Fit view after arrangement
+            setTimeout(() => {
+                fitDesignerToView();
+            }, 500);
+        }
+
+        // Load templates
+        async function loadTemplates() {
+            if (!config.interactiveCreatorEnabled) return;
+
+            try {
+                const response = await fetch('/visualization/creator/templates');
+                const templates = await response.json();
+
+                const templatesList = document.getElementById('templatesList');
+                templatesList.innerHTML = '';
+
+                templates.forEach(template => {
+                    const templateElement = document.createElement('button');
+                    templateElement.className = 'btn btn-outline-secondary btn-sm mb-2 w-100';
+                    templateElement.innerHTML = `
+                        <strong>${template.name}</strong>
+                        <br><small>${template.description}</small>
+                    `;
+
+                    templateElement.addEventListener('click', () => loadTemplate(template));
+                    templatesList.appendChild(templateElement);
+                });
+
+            } catch (error) {
+                console.error('Failed to load templates:', error);
+            }
+        }
+
+        // Load template into designer
+        function loadTemplate(template) {
+            document.getElementById('agentName').value = template.id;
+            document.getElementById('systemPrompt').value = template.description;
+
+            // Clear existing designer
+            if (designerNetwork) {
+                designerNetwork.destroy();
+            }
+
+            // Create default input and output nodes for template
+            const defaultNodes = [
+                {
+                    id: 'input_node',
+                    label: 'Input',
+                    title: 'Graph input node - receives initial data',
+                    color: getNodeColor('input'),
+                    shape: getNodeShape('input'),
+                    font: { size: 12 },
+                    borderWidth: 2,
+                    borderWidthSelected: 3,
+                    x: -300,
+                    y: -100,
+                    nodeData: {
+                        type: 'input',
+                        prompt: 'Input node: {input}',
+                        tool: null
+                    }
+                },
+                {
+                    id: 'output_node',
+                    label: 'Output',
+                    title: 'Graph output node - returns final result',
+                    color: getNodeColor('output'),
+                    shape: getNodeShape('output'),
+                    font: { size: 12 },
+                    borderWidth: 2,
+                    borderWidthSelected: 3,
+                    x: 300,
+                    y: 100,
+                    nodeData: {
+                        type: 'output',
+                        prompt: 'Output node: {input}',
+                        tool: null,
+                        dependsOn: []
+                    }
+                }
+            ];
+
+            // Load template nodes into designer with proper positioning
+            const templateNodes = template.nodes.map((node, index) => ({
+                id: node.nodeId,
+                label: node.nodeId,
+                title: node.prompt || node.tool || 'Conditional node',
+                color: getNodeColor(node.prompt ? 'prompt' : node.tool ? 'tool' : 'conditional'),
+                shape: getNodeShape(node.prompt ? 'prompt' : node.tool ? 'tool' : 'conditional'),
+                font: { size: 12 },
+                borderWidth: 2,
+                borderWidthSelected: 3,
+                x: (index - template.nodes.length / 2) * 150,
+                y: 0,
+                nodeData: {
+                    type: node.prompt ? 'prompt' : node.tool ? 'tool' : 'conditional',
+                    prompt: node.prompt,
+                    tool: node.tool,
+                    conditional: node.conditional,
+                    dependsOn: node.dependsOn || []
+                }
+            }));
+
+            // Combine default nodes with template nodes
+            const allNodes = [...defaultNodes, ...templateNodes];
+
+            const edges = [];
+            
+            // Add edges between template nodes based on dependencies
+            template.nodes.forEach(node => {
+                if (node.dependsOn) {
+                    node.dependsOn.forEach(dep => {
+                        edges.push({
+                            from: dep,
+                            to: node.nodeId,
+                            arrows: 'to',
+                            color: { color: '#848484' }
+                        });
+                    });
+                }
+            });
+
+            // Connect input node to the start of the template workflow
+            // Find nodes with no dependencies (start nodes)
+            const startNodes = template.nodes.filter(node => !node.dependsOn || node.dependsOn.length === 0);
+            startNodes.forEach(startNode => {
+                edges.push({
+                    from: 'input_node',
+                    to: startNode.nodeId,
+                    arrows: 'to',
+                    color: { color: '#28a745' } // Green for input connections
+                });
+            });
+
+            // Connect end of template workflow to output node
+            // Find nodes that no other nodes depend on (end nodes)
+            const allDependencies = template.nodes.flatMap(node => node.dependsOn || []);
+            const endNodes = template.nodes.filter(node => !allDependencies.includes(node.nodeId));
+            endNodes.forEach(endNode => {
+                edges.push({
+                    from: endNode.nodeId,
+                    to: 'output_node',
+                    arrows: 'to',
+                    color: { color: '#dc3545' } // Red for output connections
+                });
+            });
+
+            const container = document.getElementById('graphDesigner');
+            const data = { nodes: new vis.DataSet(allNodes), edges: new vis.DataSet(edges) };
+            
+            // Use same options as initializeDesigner() to avoid movement restrictions
+            const options = {
+                layout: {
+                    hierarchical: false,
+                    randomSeed: undefined,
+                    improvedLayout: true
+                },
+                physics: {
+                    enabled: false // Disable physics for clean graphing tool behavior
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true,
+                    selectConnectedEdges: false,
+                    hover: true,
+                    hoverConnectedEdges: true,
+                    tooltipDelay: 300,
+                    multiselect: true,
+                    keyboard: {
+                        enabled: true,
+                        speed: {x: 10, y: 10, zoom: 0.02},
+                        bindToWindow: false
+                    },
+                    navigationButtons: false,
+                    zoomSpeed: 1
+                },
+                manipulation: {
+                    enabled: false
+                },
+                nodes: {
+                    borderWidth: 2,
+                    borderWidthSelected: 3,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.2)',
+                        size: 8,
+                        x: 2,
+                        y: 2
+                    },
+                    font: {
+                        size: 12,
+                        face: 'Arial',
+                        strokeWidth: 0,
+                        align: 'center'
+                    },
+                    margin: 10,
+                    widthConstraint: {
+                        minimum: 80,
+                        maximum: 200
+                    },
+                    heightConstraint: {
+                        minimum: 40
+                    },
+                    chosen: {
+                        node: function(values, id, selected, hovering) {
+                            values.borderWidth = 3;
+                            values.borderColor = '#007bff';
+                        }
+                    }
+                },
+                edges: {
+                    width: 2,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.1)',
+                        size: 5,
+                        x: 1,
+                        y: 1
+                    },
+                    smooth: {
+                        enabled: true,
+                        type: 'dynamic',
+                        forceDirection: 'none',
+                        roundness: 0.5
+                    },
+                    arrows: {
+                        to: {
+                            enabled: true,
+                            scaleFactor: 1.2,
+                            type: 'arrow'
+                        }
+                    },
+                    chosen: {
+                        edge: function(values, id, selected, hovering) {
+                            values.width = 3;
+                            values.color = '#007bff';
+                        }
+                    }
+                }
+            };
+
+            designerNetwork = new vis.Network(container, data, options);
+
+            // Add event listeners for designer (same as initializeDesigner)
+            setupDesignerEventHandlers();
+
+            // Add drop support to designer
+            container.addEventListener('dragover', handleDesignerDragOver);
+            container.addEventListener('drop', handleDesignerDrop);
+
+            // Update port positions when nodes are moved or network is stabilized
+            designerNetwork.on('dragEnd', updatePortPositions);
+            designerNetwork.on('stabilizationIterationsDone', updatePortPositions);
+            designerNetwork.on('zoom', updatePortPositions);
+            designerNetwork.on('pan', updatePortPositions);
+
+            // Add connection ports to all nodes after network is rendered
+            setTimeout(() => {
+                allNodes.forEach(node => {
+                    addConnectionPorts(node.id);
+                });
+            }, 100);
+
+            showAlert(`Template "${template.name}" loaded successfully`, 'success');
+        }
+
+        // Validate graph using client-side validation rules
+        async function validateGraph() {
+            try {
+                // Call the comprehensive client-side validation function
+                const isValid = validateGraphConstraints();
+                
+                // Create result object for display
+                const result = {
+                    valid: isValid,
+                    message: isValid ? 'Graph validation passed! All rules are satisfied.' : 'Graph validation failed. Please check the errors above.',
+                    errors: isValid ? [] : ['See detailed error messages in the alert above']
+                };
+                
+                displayValidationResults(result);
+                
+                if (isValid) {
+                    showAlert('✅ Graph validation passed! All rules are satisfied.', 'success');
+                }
+
+            } catch (error) {
+                console.error('Validation failed:', error);
+                showAlert('Validation failed: ' + error.message, 'danger');
+                
+                const result = {
+                    valid: false,
+                    message: 'Validation error occurred',
+                    errors: [error.message]
+                };
+                displayValidationResults(result);
+            }
+        }
+
+        // Generate YAML
+        async function generateYaml() {
+            try {
+                const graphDef = collectGraphDefinition();
+                const response = await fetch('/visualization/creator/generate-yaml', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(graphDef)
+                });
+
+                if (response.ok) {
+                    const yaml = await response.text();
+                    displayYamlOutput(yaml);
+
+                    // Create download link
+                    const blob = new Blob([yaml], { type: 'text/yaml' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${graphDef.name || 'workflow'}.yml`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+
+                    showAlert('YAML generated and downloaded successfully!', 'success');
+                } else {
+                    const error = await response.text();
+                    showAlert('YAML generation failed: ' + error, 'danger');
+                }
+
+            } catch (error) {
+                console.error('YAML generation failed:', error);
+                showAlert('YAML generation failed: ' + error.message, 'danger');
+            }
+        }
+
+        // Collect graph definition from designer
+        function collectGraphDefinition() {
+            const agentName = document.getElementById('agentName').value || 'untitled-agent';
+            const systemPrompt = document.getElementById('systemPrompt').value || '';
+
+            const nodes = [];
+            if (designerNetwork) {
+                const networkNodes = designerNetwork.body.data.nodes.get();
+                networkNodes.forEach(node => {
+                    const nodeData = node.nodeData || {};
+                    nodes.push({
+                        nodeId: node.id,
+                        prompt: nodeData.prompt || (node.label + ' prompt'),
+                        tool: nodeData.tool || null,
+                        dependsOn: [],
+                        conditional: nodeData.conditional || null
+                    });
+                });
+
+                // Add dependencies from edges
+                const networkEdges = designerNetwork.body.data.edges.get();
+                networkEdges.forEach(edge => {
+                    const targetNode = nodes.find(n => n.nodeId === edge.to);
+                    if (targetNode && !targetNode.dependsOn.includes(edge.from)) {
+                        targetNode.dependsOn.push(edge.from);
+                    }
+                });
+            }
+
+            return {
+                name: agentName,
+                systemPrompt: systemPrompt,
+                nodes: nodes
+            };
+        }
+
+        // Display validation results
+        function displayValidationResults(result) {
+            const resultsDiv = document.getElementById('validationResults');
+
+            if (result.valid) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> ${result.message}
+                    </div>
+                `;
+            } else {
+                let html = `<div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> Validation Failed
+                </div>`;
+
+                if (result.errors && result.errors.length > 0) {
+                    html += '<div class="mt-2"><strong>Errors:</strong><ul class="mb-0">';
+                    result.errors.forEach(error => {
+                        html += `<li class="text-danger">${error}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+
+                if (result.warnings && result.warnings.length > 0) {
+                    html += '<div class="mt-2"><strong>Warnings:</strong><ul class="mb-0">';
+                    result.warnings.forEach(warning => {
+                        html += `<li class="text-warning">${warning}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+
+                resultsDiv.innerHTML = html;
+            }
+        }
+
+        // Display YAML output
+        function displayYamlOutput(yaml) {
+            const outputDiv = document.getElementById('yamlOutput');
+            outputDiv.style.display = 'block';
+            outputDiv.innerHTML = `<pre><code>${yaml}</code></pre>`;
+        }
+
+        // Update execution display
+        function updateExecutionDisplay(execution) {
+            updateActiveExecutions();
+            updateExecutionHistory();
+
+            // If this execution is currently selected, update details
+            if (currentExecutionId === execution.execution.executionId) {
+                displayExecutionDetails(execution);
+            }
+        }
+
+        // Update active executions list
+        async function updateActiveExecutions() {
+            if (!config.realTimeStatusEnabled) return;
+
+            try {
+                const response = await fetch('/visualization/executions/active');
+                const executions = await response.json();
+
+                const container = document.getElementById('activeExecutions');
+                container.innerHTML = '';
+
+                executions.forEach(execution => {
+                    const execElement = document.createElement('div');
+                    execElement.className = 'card mb-2';
+                    execElement.innerHTML = `
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${execution.execution.agentName}</strong>
+                                <span class="status-indicator status-${execution.execution.state.toLowerCase()}"></span>
+                            </div>
+                            <small class="text-muted">${new Date(execution.execution.startTime).toLocaleTimeString()}</small>
+                        </div>
+                    `;
+
+                    execElement.addEventListener('click', () => {
+                        currentExecutionId = execution.execution.executionId;
+                        displayExecutionDetails(execution);
+                    });
+
+                    container.appendChild(execElement);
+                });
+
+            } catch (error) {
+                console.error('Failed to update active executions:', error);
+            }
+        }
+
+        // Update execution history
+        async function updateExecutionHistory() {
+            if (!config.realTimeStatusEnabled) return;
+
+            try {
+                const response = await fetch('/visualization/executions/history?limit=20');
+                const history = await response.json();
+
+                const container = document.getElementById('executionHistory');
+                container.innerHTML = '';
+
+                history.forEach(execution => {
+                    const execElement = document.createElement('div');
+                    execElement.className = 'card mb-2';
+                    execElement.innerHTML = `
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${execution.execution.agentName}</strong>
+                                <span class="status-indicator status-${execution.execution.state.toLowerCase()}"></span>
+                            </div>
+                            <small class="text-muted">${new Date(execution.execution.startTime).toLocaleTimeString()}</small>
+                        </div>
+                    `;
+
+                    execElement.addEventListener('click', () => {
+                        currentExecutionId = execution.execution.executionId;
+                        displayExecutionDetails(execution);
+                    });
+
+                    container.appendChild(execElement);
+                });
+
+            } catch (error) {
+                console.error('Failed to update execution history:', error);
+            }
+        }
+
+        // Display execution details
+        function displayExecutionDetails(execution) {
+            const container = document.getElementById('executionDetails');
+
+            let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">${execution.execution.agentName}</h6>
+                        <small class="text-muted">ID: ${execution.execution.executionId}</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Status:</strong>
+                                <span class="status-indicator status-${execution.execution.state.toLowerCase()}"></span>
+                                ${execution.execution.state}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Started:</strong> ${new Date(execution.execution.startTime).toLocaleString()}
+                            </div>
+                        </div>
+                        ${execution.execution.endTime ? `
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Ended:</strong> ${new Date(execution.execution.endTime).toLocaleString()}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6>Node Status</h6>
+            `;
+
+            execution.nodes.forEach(node => {
+                html += `
+                    <div class="node-details">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>${node.nodeId}</strong>
+                            <span class="status-indicator status-${node.state.toLowerCase()}"></span>
+                        </div>
+                        <div class="row mt-1">
+                            <div class="col-md-6">
+                                <small><strong>State:</strong> ${node.state}</small>
+                            </div>
+                            <div class="col-md-6">
+                                <small><strong>Updated:</strong> ${new Date(node.timestamp).toLocaleTimeString()}</small>
+                            </div>
+                        </div>
+                        ${node.result ? `<div class="mt-1"><small><strong>Result:</strong> ${node.result.substring(0, 100)}...</small></div>` : ''}
+                        ${node.error ? `<div class="mt-1 text-danger"><small><strong>Error:</strong> ${node.error}</small></div>` : ''}
+                        ${node.durationMs ? `<div class="mt-1"><small><strong>Duration:</strong> ${node.durationMs}ms</small></div>` : ''}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Toast notification system - no layout shifts
+        let toastContainer = null;
+        let toastQueue = [];
+        let activeToasts = [];
+
+        function initializeToastSystem() {
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    max-width: 350px;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(toastContainer);
+            }
+        }
+
+        function showAlert(message, type = 'info', duration = 4000) {
+            // Reduce notification spam for connection operations
+            if (message.includes('Connected') || message.includes('Deleted') || message.includes('Added')) {
+                duration = 2000; // Shorter duration for action confirmations
+            }
+
+            initializeToastSystem();
+
+            const toast = createToast(message, type, duration);
+            toastQueue.push(toast);
+            processToastQueue();
+        }
+
+        function createToast(message, type, duration) {
+            const toast = document.createElement('div');
+            const toastId = 'toast_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            toast.id = toastId;
+
+            // Map alert types to toast styles
+            const typeStyles = {
+                'success': { bg: '#d4edda', border: '#c3e6cb', text: '#155724', icon: 'fas fa-check-circle' },
+                'danger': { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24', icon: 'fas fa-exclamation-triangle' },
+                'warning': { bg: '#fff3cd', border: '#ffeaa7', text: '#856404', icon: 'fas fa-exclamation-circle' },
+                'info': { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460', icon: 'fas fa-info-circle' }
+            };
+
+            const style = typeStyles[type] || typeStyles['info'];
+
+            toast.style.cssText = `
+                background: ${style.bg};
+                border: 1px solid ${style.border};
+                color: ${style.text};
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                pointer-events: auto;
+                transform: translateX(100%);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                opacity: 0;
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+                line-height: 1.4;
+                max-width: 100%;
+                word-wrap: break-word;
+            `;
+
+            toast.innerHTML = `
+                <i class="${style.icon}" style="margin-right: 8px; flex-shrink: 0;"></i>
+                <span style="flex: 1;">${message}</span>
+                <button type="button" style="
+                    background: none;
+                    border: none;
+                    color: ${style.text};
+                    font-size: 16px;
+                    cursor: pointer;
+                    padding: 0;
+                    margin-left: 8px;
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                " onclick="dismissToast('${toastId}')">&times;</button>
+            `;
+
+            // Add hover effects to close button
+            const closeBtn = toast.querySelector('button');
+            closeBtn.addEventListener('mouseenter', () => closeBtn.style.opacity = '1');
+            closeBtn.addEventListener('mouseleave', () => closeBtn.style.opacity = '0.7');
+
+            return { element: toast, duration, id: toastId };
+        }
+
+        function processToastQueue() {
+            if (toastQueue.length === 0 || activeToasts.length >= 5) return;
+
+            const toast = toastQueue.shift();
+            activeToasts.push(toast);
+
+            toastContainer.appendChild(toast.element);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.element.style.transform = 'translateX(0)';
+                toast.element.style.opacity = '1';
+            });
+
+            // Auto-dismiss
+            setTimeout(() => {
+                dismissToast(toast.id);
+            }, toast.duration);
+
+            // Process next toast
+            setTimeout(() => processToastQueue(), 100);
+        }
+
+        function dismissToast(toastId) {
+            const toastIndex = activeToasts.findIndex(t => t.id === toastId);
+            if (toastIndex === -1) return;
+
+            const toast = activeToasts[toastIndex];
+
+            // Animate out
+            toast.element.style.transform = 'translateX(100%)';
+            toast.element.style.opacity = '0';
+
+            setTimeout(() => {
+                if (toast.element.parentNode) {
+                    toast.element.remove();
+                }
+                activeToasts.splice(toastIndex, 1);
+                processToastQueue(); // Process any queued toasts
+            }, 300);
+        }
+
+        // Enhanced connection feedback - reduce notification spam
+        function showConnectionFeedback(message, type = 'info') {
+            // Only show important connection messages
+            if (message.includes('mode ON') || message.includes('mode OFF') || 
+                message.includes('Connected') || message.includes('failed') || 
+                message.includes('Error') || message.includes('Drag to') || 
+                message.includes('cancelled')) {
+                showAlert(message, type, 2000);
+            }
+        }
+        
+        // Create connection preview line during drag
+        function createConnectionPreviewLine() {
+            if (!designerNetwork || !dragStartNode) return;
+            
+            const container = document.getElementById('graphDesigner');
+            
+            // Create SVG overlay for connection preview
+            let svg = container.querySelector('.connection-preview-svg');
+            if (!svg) {
+                svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.className = 'connection-preview-svg';
+                svg.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 10;
+                `;
+                container.appendChild(svg);
+            }
+            
+            // Create animated preview line
+            const previewLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            previewLine.className = 'connection-preview-line';
+            previewLine.style.cssText = `
+                stroke: #28a745;
+                stroke-width: 3;
+                stroke-dasharray: 8,4;
+                opacity: 0.8;
+                animation: connectionPulse 1s ease-in-out infinite;
+            `;
+            svg.appendChild(previewLine);
+            
+            // Store reference for cleanup
+            window.connectionPreviewLine = previewLine;
+        }
+        
+        // Remove connection preview line
+        function removeConnectionPreviewLine() {
+            if (window.connectionPreviewLine) {
+                window.connectionPreviewLine.remove();
+                window.connectionPreviewLine = null;
+            }
+        }
+        
+        // Show connection success with animation
+        function showConnectionSuccess(fromNodeId, toNodeId) {
+            showConnectionFeedback(`Connected ${fromNodeId} → ${toNodeId}`, 'success');
+            
+            // Add success animation to the newly created edge
+            setTimeout(() => {
+                const edges = designerNetwork.body.data.edges;
+                const allEdges = edges.get();
+                const newEdge = allEdges.find(edge => 
+                    edge.from === fromNodeId && edge.to === toNodeId
+                );
+                
+                if (newEdge) {
+                    // Temporarily highlight the new connection
+                    edges.update({
+                        id: newEdge.id,
+                        color: {
+                            color: '#28a745',
+                            highlight: '#28a745'
+                        },
+                        width: 4
+                    });
+                    
+                    // Reset to normal after animation
+                    setTimeout(() => {
+                        edges.update({
+                            id: newEdge.id,
+                            color: {
+                                color: '#848484',
+                                highlight: '#007bff'
+                            },
+                            width: 2
+                        });
+                    }, 1000);
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>

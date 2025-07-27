@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -97,7 +96,7 @@ public class McpClientConfiguration {
                             String toolName = toolCallback.getToolDefinition().name();
                             Map<String, Object> toolSchema = extractToolSchema(toolCallback);
                             
-                            if (toolName != null && toolSchema != null) {
+                            if (toolSchema != null) {
                                 discoveredTools.put(toolName, toolSchema);
                                 log.debug("Discovered tool '{}' with schema: {}", toolName, toolSchema);
                             }
@@ -137,28 +136,26 @@ public class McpClientConfiguration {
                 
                 // Extract description using proper API
                 String description = toolDefinition.description();
-                if (description != null && !description.isEmpty()) {
+                if (!description.isEmpty()) {
                     schema.put("description", description);
                 }
                 
                 // Extract input schema using proper API
                 String inputSchema = toolDefinition.inputSchema();
-                if (inputSchema != null && !inputSchema.isEmpty()) {
+                if (!inputSchema.isEmpty()) {
                     schema.put("inputSchema", inputSchema);
                 }
                 
                 // Extract tool name for reference
                 String toolName = toolDefinition.name();
-                if (toolName != null && !toolName.isEmpty()) {
+                if (!toolName.isEmpty()) {
                     schema.put("name", toolName);
                 }
                 
                 // Add tool metadata if available
                 try {
                     var toolMetadata = toolCallback.getToolMetadata();
-                    if (toolMetadata != null) {
-                        schema.put("metadata", toolMetadata.toString());
-                    }
+                    schema.put("metadata", toolMetadata.toString());
                 } catch (Exception e) {
                     log.debug("Could not extract tool metadata: {}", e.getMessage());
                 }
@@ -205,7 +202,7 @@ public class McpClientConfiguration {
                                     log.info("External tool '{}' on server '{}' completed successfully", 
                                         toolName, serverName);
                                     
-                                    return result != null ? result : "Tool executed successfully";
+                                    return result;
                                     
                                 } catch (Exception e) {
                                     log.error("Error executing tool callback for '{}': {}", toolName, e.getMessage());

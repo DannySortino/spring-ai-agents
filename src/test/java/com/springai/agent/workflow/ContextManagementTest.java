@@ -48,7 +48,7 @@ class ContextManagementTest {
     @Mock
     private AssistantMessage assistantMessage;
 
-    private ChainWorkflow chainWorkflow;
+    private GraphWorkflow graphWorkflow;
 
     @BeforeEach
     void setUp() {
@@ -63,22 +63,33 @@ class ContextManagementTest {
     @Test
     void testDefaultBehavior_KeepsAllContext() {
         // Given: A workflow with no context management configuration
-        WorkflowStepDef step1 = WorkflowStepDef.builder()
-            .prompt("Step 1: {input}")
-            .build();
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
         
-        WorkflowStepDef step2 = WorkflowStepDef.builder()
-            .prompt("Step 2: {customKey} - {previousResult}")
-            .build();
+        WorkflowStepDef step1 = new WorkflowStepDef();
+        step1.setNodeId("step1");
+        step1.setPrompt("Process: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        
+        WorkflowStepDef step2 = new WorkflowStepDef();
+        step2.setNodeId("step2");
+        step2.setPrompt("Analyze: {step1}");
+        step2.setDependsOn(List.of("step1"));
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step2}");
+        outputNode.setDependsOn(List.of("step2"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step1, step2), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step1, step2, outputNode), mcpToolService);
 
         // When: Execute workflow with initial context
         Map<String, Object> context = new HashMap<>();
         context.put("customKey", "customValue");
         context.put("agentName", "testAgent");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
         // Then: Context should be preserved throughout execution
         assertNotNull(result);
@@ -92,21 +103,31 @@ class ContextManagementTest {
     @Test
     void testClearBefore_RemovesContextBeforeStepExecution() {
         // Given: A workflow with clearBefore configuration
-        ContextManagementDef contextMgmt = ContextManagementDef.builder()
-            .clearBefore(true)
-            .preserveKeys(List.of("systemPrompt", "agentName"))
-            .build();
+        ContextManagementDef contextMgmt = new ContextManagementDef();
+        contextMgmt.setClearBefore(true);
+        contextMgmt.setPreserveKeys(List.of("agentName", "systemPrompt"));
             
-        WorkflowStepDef step1 = WorkflowStepDef.builder()
-            .prompt("Step 1: {input}")
-            .build();
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
         
-        WorkflowStepDef step2 = WorkflowStepDef.builder()
-            .prompt("Step 2: {customKey} - {agentName}")
-            .contextManagement(contextMgmt)
-            .build();
+        WorkflowStepDef step1 = new WorkflowStepDef();
+        step1.setNodeId("step1");
+        step1.setPrompt("Process: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        
+        WorkflowStepDef step2 = new WorkflowStepDef();
+        step2.setNodeId("step2");
+        step2.setPrompt("Analyze: {step1}");
+        step2.setDependsOn(List.of("step1"));
+        step2.setContextManagement(contextMgmt);
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step2}");
+        outputNode.setDependsOn(List.of("step2"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step1, step2), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step1, step2, outputNode), mcpToolService);
 
         // When: Execute workflow with initial context
         Map<String, Object> context = new HashMap<>();
@@ -114,7 +135,7 @@ class ContextManagementTest {
         context.put("agentName", "testAgent");
         context.put("systemPrompt", "You are a helpful assistant");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
         // Then: Context should be cleared before step 2, but preserved keys should remain
         assertNotNull(result);
@@ -126,28 +147,38 @@ class ContextManagementTest {
     @Test
     void testClearAfter_RemovesContextAfterStepExecution() {
         // Given: A workflow with clearAfter configuration
-        ContextManagementDef contextMgmt = ContextManagementDef.builder()
-            .clearAfter(true)
-            .preserveKeys(List.of("agentName"))
-            .build();
+        ContextManagementDef contextMgmt = new ContextManagementDef();
+        contextMgmt.setClearAfter(true);
+        contextMgmt.setPreserveKeys(List.of("agentName"));
             
-        WorkflowStepDef step1 = WorkflowStepDef.builder()
-            .prompt("Step 1: {input}")
-            .contextManagement(contextMgmt)
-            .build();
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
         
-        WorkflowStepDef step2 = WorkflowStepDef.builder()
-            .prompt("Step 2: {customKey} - {agentName}")
-            .build();
+        WorkflowStepDef step1 = new WorkflowStepDef();
+        step1.setNodeId("step1");
+        step1.setPrompt("Process: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        step1.setContextManagement(contextMgmt);
+        
+        WorkflowStepDef step2 = new WorkflowStepDef();
+        step2.setNodeId("step2");
+        step2.setPrompt("Analyze: {step1}");
+        step2.setDependsOn(List.of("step1"));
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step2}");
+        outputNode.setDependsOn(List.of("step2"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step1, step2), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step1, step2, outputNode), mcpToolService);
 
         // When: Execute workflow with initial context
         Map<String, Object> context = new HashMap<>();
         context.put("customKey", "customValue");
         context.put("agentName", "testAgent");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
         // Then: Context should be cleared after step 1, but preserved keys should remain
         assertNotNull(result);
@@ -159,20 +190,30 @@ class ContextManagementTest {
     @Test
     void testRemoveSpecificKeys_RemovesOnlySpecifiedKeys() {
         // Given: A workflow with removeKeys configuration
-        ContextManagementDef contextMgmt = ContextManagementDef.builder()
-            .removeKeys(List.of("customKey", "temporaryData"))
-            .build();
+        ContextManagementDef contextMgmt = new ContextManagementDef();
+        contextMgmt.setRemoveKeys(List.of("customKey", "temporaryData"));
             
-        WorkflowStepDef step1 = WorkflowStepDef.builder()
-            .prompt("Step 1: {input}")
-            .build();
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
         
-        WorkflowStepDef step2 = WorkflowStepDef.builder()
-            .prompt("Step 2: {agentName}")
-            .contextManagement(contextMgmt)
-            .build();
+        WorkflowStepDef step1 = new WorkflowStepDef();
+        step1.setNodeId("step1");
+        step1.setPrompt("Process: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        
+        WorkflowStepDef step2 = new WorkflowStepDef();
+        step2.setNodeId("step2");
+        step2.setPrompt("Analyze: {step1}");
+        step2.setDependsOn(List.of("step1"));
+        step2.setContextManagement(contextMgmt);
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step2}");
+        outputNode.setDependsOn(List.of("step2"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step1, step2), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step1, step2, outputNode), mcpToolService);
 
         // When: Execute workflow with initial context
         Map<String, Object> context = new HashMap<>();
@@ -181,7 +222,7 @@ class ContextManagementTest {
         context.put("agentName", "testAgent");
         context.put("keepThis", "important");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
         // Then: Only specified keys should be removed
         assertNotNull(result);
@@ -189,36 +230,45 @@ class ContextManagementTest {
         assertFalse(context.containsKey("temporaryData")); // Should be removed
         assertTrue(context.containsKey("agentName")); // Should be kept
         assertTrue(context.containsKey("keepThis")); // Should be kept
-        assertTrue(context.containsKey("previousResult")); // Added during execution
     }
 
     @Test
-    void testMixedContextManagement_DifferentStepsHaveDifferentSettings() {
-        // Given: A workflow with different context management per step
-        ContextManagementDef clearBeforeConfig = ContextManagementDef.builder()
-            .clearBefore(true)
-            .preserveKeys(List.of("agentName"))
-            .build();
+    void testMixedContextManagement_DifferentStepsWithDifferentSettings() {
+        // Given: A workflow with different context management settings per step
+        ContextManagementDef clearAfterConfig = new ContextManagementDef();
+        clearAfterConfig.setClearAfter(true);
+        clearAfterConfig.setPreserveKeys(List.of("agentName"));
             
-        ContextManagementDef removeKeysConfig = ContextManagementDef.builder()
-            .removeKeys(List.of("temporaryData"))
-            .build();
+        ContextManagementDef removeKeysConfig = new ContextManagementDef();
+        removeKeysConfig.setRemoveKeys(List.of("temporaryData"));
             
-        WorkflowStepDef step1 = WorkflowStepDef.builder()
-            .prompt("Step 1: {input}")
-            .build(); // No context management
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
         
-        WorkflowStepDef step2 = WorkflowStepDef.builder()
-            .prompt("Step 2: {customKey}")
-            .contextManagement(clearBeforeConfig)
-            .build();
-            
-        WorkflowStepDef step3 = WorkflowStepDef.builder()
-            .prompt("Step 3: {agentName}")
-            .contextManagement(removeKeysConfig)
-            .build();
+        WorkflowStepDef step1 = new WorkflowStepDef();
+        step1.setNodeId("step1");
+        step1.setPrompt("Process: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        
+        WorkflowStepDef step2 = new WorkflowStepDef();
+        step2.setNodeId("step2");
+        step2.setPrompt("Analyze: {step1}");
+        step2.setDependsOn(List.of("step1"));
+        step2.setContextManagement(clearAfterConfig);
+        
+        WorkflowStepDef step3 = new WorkflowStepDef();
+        step3.setNodeId("step3");
+        step3.setPrompt("Finalize: {step2}");
+        step3.setDependsOn(List.of("step2"));
+        step3.setContextManagement(removeKeysConfig);
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step3}");
+        outputNode.setDependsOn(List.of("step3"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step1, step2, step3), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step1, step2, step3, outputNode), mcpToolService);
 
         // When: Execute workflow with initial context
         Map<String, Object> context = new HashMap<>();
@@ -226,7 +276,7 @@ class ContextManagementTest {
         context.put("temporaryData", "temp");
         context.put("agentName", "testAgent");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
         // Then: Context should be managed according to each step's configuration
         assertNotNull(result);
@@ -238,83 +288,122 @@ class ContextManagementTest {
     @Test
     void testToolStepWithContextManagement() {
         // Given: A workflow with tool step and context management
-        ContextManagementDef contextMgmt = ContextManagementDef.builder()
-            .clearAfter(true)
-            .preserveKeys(List.of("agentName"))
-            .build();
+        ContextManagementDef contextMgmt = new ContextManagementDef();
+        contextMgmt.setClearAfter(true);
+        contextMgmt.setPreserveKeys(List.of("agentName"));
             
-        WorkflowStepDef toolStep = WorkflowStepDef.builder()
-            .tool("testTool")
-            .contextManagement(contextMgmt)
-            .build();
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
+        
+        WorkflowStepDef toolStep = new WorkflowStepDef();
+        toolStep.setNodeId("tool_step");
+        toolStep.setTool("testTool");
+        toolStep.setDependsOn(List.of("input_node"));
+        toolStep.setContextManagement(contextMgmt);
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {tool_step}");
+        outputNode.setDependsOn(List.of("tool_step"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(toolStep), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, toolStep, outputNode), mcpToolService);
 
         // When: Execute workflow with initial context
         Map<String, Object> context = new HashMap<>();
         context.put("customKey", "customValue");
         context.put("agentName", "testAgent");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
         // Then: Tool should be called and context managed
         assertNotNull(result);
-        verify(mcpToolService).callTool(eq("testTool"), eq("test input"), any(Map.class));
+        verify(mcpToolService).callTool(eq("testTool"), eq("Mock response"), any(Map.class));
         assertFalse(context.containsKey("customKey")); // Should be cleared after tool execution
         assertTrue(context.containsKey("agentName")); // Should be preserved
     }
 
     @Test
-    void testNoContextManagement_NullConfiguration() {
-        // Given: A workflow step with null context management
-        WorkflowStepDef step = WorkflowStepDef.builder()
-            .prompt("Step: {input}")
-            .contextManagement(null) // Explicitly null
-            .build();
+    void testPreserveKeysOnly_ClearsEverythingExceptSpecifiedKeys() {
+        // Given: A workflow that clears context but preserves specific keys
+        ContextManagementDef contextMgmt = new ContextManagementDef();
+        contextMgmt.setClearAfter(true);
+        contextMgmt.setPreserveKeys(List.of("systemPrompt", "isFirstInvocation"));
+            
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
+        
+        WorkflowStepDef step = new WorkflowStepDef();
+        step.setNodeId("step1");
+        step.setPrompt("Process: {input_node}");
+        step.setDependsOn(List.of("input_node"));
+        step.setContextManagement(contextMgmt);
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step1}");
+        outputNode.setDependsOn(List.of("step1"));
 
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step), mcpToolService);
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step, outputNode), mcpToolService);
 
-        // When: Execute workflow with initial context
+        // When: Execute workflow with rich context
         Map<String, Object> context = new HashMap<>();
         context.put("customKey", "customValue");
+        context.put("temporaryData", "temp");
+        context.put("systemPrompt", "You are helpful");
+        context.put("isFirstInvocation", true);
         context.put("agentName", "testAgent");
         
-        String result = chainWorkflow.execute("test input", context);
+        String result = graphWorkflow.execute("test input", context);
 
-        // Then: All context should be preserved (default behavior)
+        // Then: Only preserved keys should remain
         assertNotNull(result);
-        assertTrue(context.containsKey("customKey"));
-        assertTrue(context.containsKey("agentName"));
-        assertTrue(context.containsKey("previousResult"));
+        assertFalse(context.containsKey("customKey"));
+        assertFalse(context.containsKey("temporaryData"));
+        assertFalse(context.containsKey("agentName"));
+        assertTrue(context.containsKey("systemPrompt"));
+        assertTrue(context.containsKey("isFirstInvocation"));
     }
 
     @Test
-    void testClearAllContext_NoPreserveKeys() {
-        // Given: A workflow with clearBefore and no preserveKeys
-        ContextManagementDef contextMgmt = ContextManagementDef.builder()
-            .clearBefore(true)
-            .preserveKeys(null) // No keys to preserve
-            .build();
+    void testRemoveKeysOverridesClearSettings() {
+        // Given: A workflow with both clear and removeKeys settings (removeKeys should take precedence)
+        ContextManagementDef contextMgmt = new ContextManagementDef();
+        contextMgmt.setClearAfter(true);
+        contextMgmt.setRemoveKeys(List.of("onlyThis"));
             
-        WorkflowStepDef step = WorkflowStepDef.builder()
-            .prompt("Step: {input}")
-            .contextManagement(contextMgmt)
-            .build();
-
-        chainWorkflow = new ChainWorkflow(chatModel, List.of(step), mcpToolService);
-
-        // When: Execute workflow with initial context
-        Map<String, Object> context = new HashMap<>();
-        context.put("customKey", "customValue");
-        context.put("agentName", "testAgent");
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
         
-        String result = chainWorkflow.execute("test input", context);
+        WorkflowStepDef step = new WorkflowStepDef();
+        step.setNodeId("step1");
+        step.setPrompt("Process: {input_node}");
+        step.setDependsOn(List.of("input_node"));
+        step.setContextManagement(contextMgmt);
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {step1}");
+        outputNode.setDependsOn(List.of("step1"));
 
-        // Then: All context should be cleared
+        graphWorkflow = new GraphWorkflow(chatModel, List.of(inputNode, step, outputNode), mcpToolService);
+
+        // When: Execute workflow with context
+        Map<String, Object> context = new HashMap<>();
+        context.put("onlyThis", "shouldBeRemoved");
+        context.put("keepThis", "shouldBeKept");
+        context.put("alsoKeep", "shouldAlsoBeKept");
+        
+        String result = graphWorkflow.execute("test input", context);
+
+        // Then: Only the specified key should be removed, others should remain
         assertNotNull(result);
-        assertFalse(context.containsKey("customKey"));
-        assertFalse(context.containsKey("agentName"));
-        // previousResult should also be cleared since no keys are preserved
-        assertFalse(context.containsKey("previousResult"));
+        assertFalse(context.containsKey("onlyThis")); // Should be removed
+        assertTrue(context.containsKey("keepThis")); // Should be kept
+        assertTrue(context.containsKey("alsoKeep")); // Should be kept
     }
 }
+
+

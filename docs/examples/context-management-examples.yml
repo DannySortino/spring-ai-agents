@@ -1,16 +1,35 @@
 # Context Management Examples
-# This file demonstrates various context management configurations for workflow steps
+# This file demonstrates various context management configurations for GraphWorkflow steps
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 # Example 1: Default behavior - Keep all context (no context management configuration)
 agents:
   - name: "default-context-agent"
     systemPrompt: "You are a helpful assistant that maintains context throughout the conversation."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Analyze the input: {input}"
-        - prompt: "Step 2: Based on previous analysis ({previousResult}), provide recommendations"
-        # No contextManagement specified = keep all context (default)
+        # REQUIRED: input_node - receives user input
+        - nodeId: "input_node"
+          prompt: "Receive user request: {input}"
+          
+        - nodeId: "analyze"
+          dependsOn: ["input_node"]
+          prompt: "Step 1: Analyze the input: {input_node}"
+          
+        - nodeId: "recommend"
+          dependsOn: ["analyze"]
+          prompt: "Step 2: Based on previous analysis ({analyze}), provide recommendations"
+          # No contextManagement specified = keep all context (default)
+          
+        # REQUIRED: output_node - returns final result
+        - nodeId: "output_node"
+          dependsOn: ["recommend"]
+          prompt: "Present final recommendations: {recommend}"
 
 ---
 
@@ -19,17 +38,34 @@ agents:
   - name: "clear-before-agent"
     systemPrompt: "You are an assistant that clears sensitive data before certain operations."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Collect user information: {input}"
-        - prompt: "Step 2: Process data securely"
+        # REQUIRED: input_node - receives user input
+        - nodeId: "input_node"
+          prompt: "Receive user request: {input}"
+          
+        - nodeId: "collect_info"
+          dependsOn: ["input_node"]
+          prompt: "Step 1: Collect user information: {input_node}"
+          
+        - nodeId: "secure_process"
+          dependsOn: ["collect_info"]
+          prompt: "Step 2: Process data securely"
           contextManagement:
             clearBefore: true
             preserveKeys:
               - "systemPrompt"
               - "agentName"
               - "isFirstInvocation"
-        - prompt: "Step 3: Provide final response"
+              
+        - nodeId: "final_response"
+          dependsOn: ["secure_process"]
+          prompt: "Step 3: Provide final response"
+          
+        # REQUIRED: output_node - returns final result
+        - nodeId: "output_node"
+          dependsOn: ["final_response"]
+          prompt: "Present secure response: {final_response}"
 
 ---
 
@@ -38,16 +74,19 @@ agents:
   - name: "clear-after-agent"
     systemPrompt: "You are an assistant that cleans up temporary data after processing."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Generate temporary analysis: {input}"
+        - nodeId: "temp_analysis"
+          prompt: "Step 1: Generate temporary analysis: {input}"
           contextManagement:
             clearAfter: true
             preserveKeys:
               - "systemPrompt"
               - "agentName"
               - "userId"
-        - prompt: "Step 2: Create final report based on clean context"
+        - nodeId: "final_report"
+          dependsOn: ["temp_analysis"]
+          prompt: "Step 2: Create final report based on clean context"
 
 ---
 
@@ -56,16 +95,21 @@ agents:
   - name: "selective-removal-agent"
     systemPrompt: "You are an assistant that removes only specific sensitive information."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Process user request with credentials: {input}"
-        - prompt: "Step 2: Perform secure operation"
+        - nodeId: "process_request"
+          prompt: "Step 1: Process user request with credentials: {input}"
+        - nodeId: "secure_operation"
+          dependsOn: ["process_request"]
+          prompt: "Step 2: Perform secure operation"
           contextManagement:
             removeKeys:
               - "password"
               - "apiKey"
               - "temporaryToken"
-        - prompt: "Step 3: Return results without sensitive data"
+        - nodeId: "return_results"
+          dependsOn: ["secure_operation"]
+          prompt: "Step 3: Return results without sensitive data"
 
 ---
 
@@ -74,10 +118,13 @@ agents:
   - name: "complex-context-agent"
     systemPrompt: "You are an assistant with sophisticated context management."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Initial data collection: {input}"
-        - prompt: "Step 2: Sensitive processing"
+        - nodeId: "data_collection"
+          prompt: "Step 1: Initial data collection: {input}"
+        - nodeId: "sensitive_processing"
+          dependsOn: ["data_collection"]
+          prompt: "Step 2: Sensitive processing"
           contextManagement:
             clearBefore: true
             preserveKeys:
@@ -85,14 +132,18 @@ agents:
               - "agentName"
               - "userId"
               - "sessionId"
-        - tool: "external-api-call"
+        - nodeId: "api_call"
+          dependsOn: ["sensitive_processing"]
+          tool: "external-api-call"
           contextManagement:
             clearAfter: true
             preserveKeys:
               - "systemPrompt"
               - "agentName"
               - "finalResult"
-        - prompt: "Step 4: Generate final response: {finalResult}"
+        - nodeId: "final_response"
+          dependsOn: ["api_call"]
+          prompt: "Step 4: Generate final response: {finalResult}"
 
 ---
 
@@ -101,23 +152,30 @@ agents:
   - name: "tool-context-agent"
     systemPrompt: "You are an assistant that manages context around tool calls."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Prepare data for tool: {input}"
-        - tool: "data-processor"
+        - nodeId: "prepare_data"
+          prompt: "Step 1: Prepare data for tool: {input}"
+        - nodeId: "process_data"
+          dependsOn: ["prepare_data"]
+          tool: "data-processor"
           contextManagement:
             clearBefore: true
             preserveKeys:
               - "systemPrompt"
               - "agentName"
-        - tool: "result-formatter"
+        - nodeId: "format_results"
+          dependsOn: ["process_data"]
+          tool: "result-formatter"
           contextManagement:
             clearAfter: true
             preserveKeys:
               - "systemPrompt"
               - "agentName"
               - "formattedResult"
-        - prompt: "Step 4: Present final results: {formattedResult}"
+        - nodeId: "present_results"
+          dependsOn: ["format_results"]
+          prompt: "Step 4: Present final results: {formattedResult}"
 
 ---
 
@@ -126,91 +184,131 @@ agents:
   - name: "secure-agent"
     systemPrompt: "You are a security-focused assistant that clears all context for sensitive operations."
     workflow:
-      type: CHAIN
+      type: graph
       chain:
-        - prompt: "Step 1: Collect sensitive information: {input}"
-        - prompt: "Step 2: Process in isolated context"
+        - nodeId: "collect_info"
+          prompt: "Step 1: Collect sensitive information: {input}"
+        - nodeId: "isolated_processing"
+          dependsOn: ["collect_info"]
+          prompt: "Step 2: Process in isolated context"
           contextManagement:
             clearBefore: true
             # No preserveKeys = clear everything
-        - prompt: "Step 3: Provide sanitized response"
+        - nodeId: "sanitized_response"
+          dependsOn: ["isolated_processing"]
+          prompt: "Step 3: Provide sanitized response"
 
 ---
 
-# Example 8: Parallel workflow with context management
+# Example 8: Parallel workflow with context management (converted to GraphWorkflow)
 agents:
   - name: "parallel-context-agent"
     systemPrompt: "You are an assistant using parallel processing with context control."
     workflow:
-      type: PARALLEL
-      tasks:
-        - name: "analysis-task"
-          workflow:
-            type: CHAIN
-            chain:
-              - prompt: "Analyze data: {input}"
-              - prompt: "Clean up analysis context"
-                contextManagement:
-                  clearAfter: true
-                  preserveKeys:
-                    - "analysisResult"
-        - name: "validation-task"
-          workflow:
-            type: CHAIN
-            chain:
-              - prompt: "Validate data: {input}"
-              - prompt: "Clear validation context"
-                contextManagement:
-                  removeKeys:
-                    - "temporaryValidationData"
-                    - "intermediateResults"
-      aggregator: "Combine analysis ({analysisResult}) and validation results: {results}"
+      type: graph
+      chain:
+        # Parallel analysis and validation tasks
+        - nodeId: "analyze_data"
+          prompt: "Analyze data: {input}"
+        - nodeId: "validate_data"
+          prompt: "Validate data: {input}"
+        
+        # Context cleanup for analysis
+        - nodeId: "cleanup_analysis"
+          dependsOn: ["analyze_data"]
+          prompt: "Clean up analysis context"
+          contextManagement:
+            clearAfter: true
+            preserveKeys:
+              - "analysisResult"
+        
+        # Context cleanup for validation
+        - nodeId: "cleanup_validation"
+          dependsOn: ["validate_data"]
+          prompt: "Clear validation context"
+          contextManagement:
+            removeKeys:
+              - "temporaryValidationData"
+              - "intermediateResults"
+        
+        # Aggregator that depends on both cleanup steps
+        - nodeId: "combine_results"
+          dependsOn: ["cleanup_analysis", "cleanup_validation"]
+          prompt: "Combine analysis and validation results: {cleanup_analysis} and {cleanup_validation}"
 
 ---
 
-# Example 9: Orchestrator workflow with context management
+# Example 9: Orchestrator workflow with context management (converted to GraphWorkflow)
 agents:
   - name: "orchestrator-context-agent"
     systemPrompt: "You are a manager coordinating workers with context control."
     workflow:
-      type: ORCHESTRATOR
-      managerPrompt: "Analyze the request and delegate to appropriate workers: {input}"
-      workers:
-        - name: "data-worker"
-          workflow:
-            type: CHAIN
-            chain:
-              - prompt: "Process data: {input}"
-              - prompt: "Clean sensitive data"
-                contextManagement:
-                  removeKeys:
-                    - "rawData"
-                    - "personalInfo"
-        - name: "analysis-worker"
-          workflow:
-            type: CHAIN
-            chain:
-              - prompt: "Perform analysis: {input}"
-              - prompt: "Clear analysis cache"
-                contextManagement:
-                  clearAfter: true
-                  preserveKeys:
-                    - "finalAnalysis"
-      synthesizerPrompt: "Synthesize results from workers: {workerResults}"
+      type: graph
+      chain:
+        # Manager node - analyzes and delegates
+        - nodeId: "manager"
+          prompt: "Analyze the request and delegate to appropriate workers: {input}"
+        
+        # Data worker - processes data with context cleanup
+        - nodeId: "data_worker_process"
+          dependsOn: ["manager"]
+          prompt: "Data Worker - Manager decision: {manager} - Process data: {input}"
+        - nodeId: "data_worker_cleanup"
+          dependsOn: ["data_worker_process"]
+          prompt: "Clean sensitive data"
+          contextManagement:
+            removeKeys:
+              - "rawData"
+              - "personalInfo"
+        
+        # Analysis worker - performs analysis with context cleanup
+        - nodeId: "analysis_worker_process"
+          dependsOn: ["manager"]
+          prompt: "Analysis Worker - Manager decision: {manager} - Perform analysis: {input}"
+        - nodeId: "analysis_worker_cleanup"
+          dependsOn: ["analysis_worker_process"]
+          prompt: "Clear analysis cache"
+          contextManagement:
+            clearAfter: true
+            preserveKeys:
+              - "finalAnalysis"
+        
+        # Synthesizer - combines worker results
+        - nodeId: "synthesizer"
+          dependsOn: ["data_worker_cleanup", "analysis_worker_cleanup"]
+          prompt: "Synthesize results from data worker: {data_worker_cleanup} and analysis worker: {analysis_worker_cleanup}"
 
 ---
 
-# Example 10: Routing workflow with context management
+# Example 10: Routing workflow with context management (converted to GraphWorkflow)
 agents:
   - name: "routing-context-agent"
     systemPrompt: "You are a router that manages context based on request type."
     workflow:
-      type: ROUTING
-      routes:
-        sensitive:
-          prompt: "Handle sensitive request with context clearing"
-          # Context management can be added to RouteDef in future enhancement
-        public:
-          prompt: "Handle public request: {input}"
-        tool-based:
-          tool: "external-processor"
+      type: graph
+      chain:
+        - nodeId: "context_router"
+          conditional:
+            condition:
+              type: CONTAINS
+              field: "input"
+              value: "sensitive"
+              ignoreCase: true
+            thenStep:
+              prompt: "Handle sensitive request with context clearing"
+              contextManagement:
+                clearAfter: true
+                preserveKeys:
+                  - "systemPrompt"
+                  - "agentName"
+            elseStep:
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "input"
+                  value: "tool"
+                  ignoreCase: true
+                thenStep:
+                  tool: "external-processor"
+                elseStep:
+                  prompt: "Handle public request: {input}"

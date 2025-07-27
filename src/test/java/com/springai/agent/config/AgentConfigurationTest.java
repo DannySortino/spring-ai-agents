@@ -2,6 +2,7 @@ package com.springai.agent.config;
 
 import com.springai.agent.service.AgentService;
 import com.springai.agent.service.McpToolService;
+import com.springai.agent.service.ExecutionStatusService;
 import com.springai.agent.workflow.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -33,12 +35,12 @@ class AgentConfigurationTest {
     
     @Test
     void testAgentServicesCreation() {
-        // Create test AppProperties
-        AppProperties appProperties = createTestAppProperties();
+        // Create test AgentsProperties
+        AgentsProperties agentsProperties = createTestAgentsProperties();
         
         // Test agent services creation
         Map<String, AgentService> agentServices = agentConfiguration.agentServices(
-            appProperties, chatModel, mcpToolService);
+            agentsProperties, chatModel, mcpToolService, Optional.empty());
         
         assertNotNull(agentServices);
         assertEquals(2, agentServices.size());
@@ -52,22 +54,25 @@ class AgentConfigurationTest {
     }
     
     @Test
-    void testAgentServicesWithNullAppProperties() {
-        AppProperties appProperties = new AppProperties();
-        appProperties.setAgents(null);
+    void testAgentServicesWithNullAgentsProperties() {
+        AgentsProperties agentsProperties = new AgentsProperties();
+        agentsProperties.setList(null);
         
-        assertThrows(NullPointerException.class, () -> {
-            agentConfiguration.agentServices(appProperties, chatModel, mcpToolService);
-        });
+        // This should not throw NullPointerException anymore based on the AgentConfiguration implementation
+        Map<String, AgentService> agentServices = agentConfiguration.agentServices(
+            agentsProperties, chatModel, mcpToolService, Optional.empty());
+        
+        assertNotNull(agentServices);
+        assertTrue(agentServices.isEmpty());
     }
     
     @Test
     void testAgentServicesWithEmptyAgents() {
-        AppProperties appProperties = new AppProperties();
-        appProperties.setAgents(List.of());
+        AgentsProperties agentsProperties = new AgentsProperties();
+        agentsProperties.setList(List.of());
         
         Map<String, AgentService> agentServices = agentConfiguration.agentServices(
-            appProperties, chatModel, mcpToolService);
+            agentsProperties, chatModel, mcpToolService, Optional.empty());
         
         assertNotNull(agentServices);
         assertTrue(agentServices.isEmpty());
@@ -81,39 +86,67 @@ class AgentConfigurationTest {
         // The actual ChatClient creation requires a real ChatModel instance
     }
     
-    private AppProperties createTestAppProperties() {
-        AppProperties appProperties = new AppProperties();
+    private AgentsProperties createTestAgentsProperties() {
+        AgentsProperties agentsProperties = new AgentsProperties();
         
         // Create test agents
-        AppProperties.AgentDef agent1 = new AppProperties.AgentDef();
+        AgentsProperties.AgentDef agent1 = new AgentsProperties.AgentDef();
         agent1.setName("testAgent1");
         agent1.setModel("openai");
         agent1.setSystemPrompt("Test prompt 1");
         
-        AppProperties.WorkflowDef workflow1 = new AppProperties.WorkflowDef();
-        workflow1.setType(WorkflowType.CHAIN);
+        AgentsProperties.WorkflowDef workflow1 = new AgentsProperties.WorkflowDef();
+        workflow1.setType(WorkflowType.GRAPH);
         
-        AppProperties.WorkflowStepDef step1 = new AppProperties.WorkflowStepDef();
-        step1.setPrompt("Test prompt: {input}");
-        workflow1.setChain(List.of(step1));
+        // Required input_node
+        AgentsProperties.WorkflowStepDef inputStep1 = new AgentsProperties.WorkflowStepDef();
+        inputStep1.setNodeId("input_node");
+        inputStep1.setPrompt("Receive input: {input}");
+        
+        AgentsProperties.WorkflowStepDef step1 = new AgentsProperties.WorkflowStepDef();
+        step1.setNodeId("test_step_1");
+        step1.setPrompt("Test prompt: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        
+        // Required output_node
+        AgentsProperties.WorkflowStepDef outputStep1 = new AgentsProperties.WorkflowStepDef();
+        outputStep1.setNodeId("output_node");
+        outputStep1.setPrompt("Final output: {test_step_1}");
+        outputStep1.setDependsOn(List.of("test_step_1"));
+        
+        workflow1.setChain(List.of(inputStep1, step1, outputStep1));
         
         agent1.setWorkflow(workflow1);
         
-        AppProperties.AgentDef agent2 = new AppProperties.AgentDef();
+        AgentsProperties.AgentDef agent2 = new AgentsProperties.AgentDef();
         agent2.setName("testAgent2");
         agent2.setModel("openai");
         agent2.setSystemPrompt("Test prompt 2");
         
-        AppProperties.WorkflowDef workflow2 = new AppProperties.WorkflowDef();
-        workflow2.setType(WorkflowType.CHAIN);
+        AgentsProperties.WorkflowDef workflow2 = new AgentsProperties.WorkflowDef();
+        workflow2.setType(WorkflowType.GRAPH);
         
-        AppProperties.WorkflowStepDef step2 = new AppProperties.WorkflowStepDef();
-        step2.setPrompt("Another test prompt: {input}");
-        workflow2.setChain(List.of(step2));
+        // Required input_node
+        AgentsProperties.WorkflowStepDef inputStep2 = new AgentsProperties.WorkflowStepDef();
+        inputStep2.setNodeId("input_node");
+        inputStep2.setPrompt("Receive input: {input}");
+        
+        AgentsProperties.WorkflowStepDef step2 = new AgentsProperties.WorkflowStepDef();
+        step2.setNodeId("test_step_2");
+        step2.setPrompt("Another test prompt: {input_node}");
+        step2.setDependsOn(List.of("input_node"));
+        
+        // Required output_node
+        AgentsProperties.WorkflowStepDef outputStep2 = new AgentsProperties.WorkflowStepDef();
+        outputStep2.setNodeId("output_node");
+        outputStep2.setPrompt("Final output: {test_step_2}");
+        outputStep2.setDependsOn(List.of("test_step_2"));
+        
+        workflow2.setChain(List.of(inputStep2, step2, outputStep2));
         
         agent2.setWorkflow(workflow2);
         
-        appProperties.setAgents(List.of(agent1, agent2));
-        return appProperties;
+        agentsProperties.setList(List.of(agent1, agent2));
+        return agentsProperties;
     }
 }

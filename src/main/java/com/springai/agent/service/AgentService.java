@@ -10,19 +10,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Core service class for managing individual AI agents.
- * 
+ * <p>
  * This service is responsible for:
  * - Executing agent workflows with user input
  * - Managing persistent context across invocations
  * - Maintaining conversation history
  * - Handling system prompts and initialization
  * - Providing context manipulation methods
- * 
+ * <p>
  * Each AgentService instance represents a single configured AI agent with its
  * own workflow, system prompt, and persistent state. The service maintains
  * thread-safe context storage and automatically manages conversation history.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @RequiredArgsConstructor
@@ -59,10 +59,9 @@ public class AgentService {
     }
     
     private Map<String, Object> createExecutionContext(String input, Map<String, Object> additionalContext) {
-        Map<String, Object> context = new HashMap<>();
-        
+
         // Add persistent context
-        context.putAll(persistentContext);
+        Map<String, Object> context = new HashMap<>(persistentContext);
         
         // Add agent metadata
         context.put("agentName", name);
@@ -88,12 +87,10 @@ public class AgentService {
         // Keep only recent history to prevent memory bloat
         if (history.size() > 10) { // 5 input/output pairs
             String oldestKey = history.keySet().stream().min(String::compareTo).orElse(null);
-            if (oldestKey != null) {
-                history.remove(oldestKey);
-                // Remove corresponding input/output pair
-                String correspondingKey = oldestKey.replace("_input", "_output").replace("_output", "_input");
-                history.remove(correspondingKey);
-            }
+            history.remove(oldestKey);
+            // Remove corresponding input/output pair
+            String correspondingKey = oldestKey.replace("_input", "_output").replace("_output", "_input");
+            history.remove(correspondingKey);
         }
         
         // Update invocation count

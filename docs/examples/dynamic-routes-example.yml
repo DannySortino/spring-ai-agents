@@ -1,6 +1,11 @@
 # Dynamic Route Discovery Examples
 # This file demonstrates how the dynamic route discovery works with any route names
 # The system will automatically discover routes from configuration without hardcoded values
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:
@@ -10,167 +15,409 @@ spring:
       api-key: ${OPENAI_API_KEY:local-api-key}
       base-url: ${OPENAI_BASE_URL:http://localhost:1234/v1}
 
-app:
-  agents:
+agents:
+  list:
     # Example 1: Standard billing routes (existing functionality)
     - name: standardBillingAgent
-      model: openai
       systemPrompt: "You are a billing specialist."
       workflow:
-        type: ROUTING
-        routes:
-          invoice:
-            prompt: "Handle invoice request: {input}"
-            tool: invoiceTool
-          dispute:
-            prompt: "Handle dispute request: {input}"
-            tool: disputeTool
-          payment:
-            prompt: "Handle payment request: {input}"
-            tool: paymentTool
+        type: graph
+        chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize billing request: {input}"
+            
+          - nodeId: "billing_router"
+            dependsOn: ["input_node"]
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input_node"
+                value: "invoice"
+                ignoreCase: true
+              thenStep:
+                prompt: "Handle invoice request: {input_node}"
+                tool: invoiceTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input_node"
+                    value: "dispute"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Handle dispute request: {input_node}"
+                    tool: disputeTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input_node"
+                        value: "payment"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Handle payment request: {input_node}"
+                        tool: paymentTool
+                      elseStep:
+                        prompt: "General billing assistance for: {input_node}"
+                        
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["billing_router"]
+            prompt: "Present final billing response: {billing_router}"
 
     # Example 2: Custom route names (demonstrates dynamic discovery)
     - name: customRoutingAgent
-      model: openai
       systemPrompt: "You are a custom routing agent with unique route names."
       workflow:
-        type: ROUTING
-        routes:
-          # These are completely custom route names - not hardcoded anywhere
-          customerService:
-            prompt: "Provide excellent customer service for: {input}"
-            tool: customerServiceTool
-          technicalSupport:
-            prompt: "Provide technical support for: {input}"
-            tool: techSupportTool
-          salesInquiry:
-            prompt: "Handle sales inquiry: {input}"
-            tool: salesTool
-          productInfo:
-            prompt: "Provide product information for: {input}"
-          generalHelp:
-            prompt: "Provide general assistance: {input}"
+        type: graph
+        chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize custom routing request: {input}"
+            
+          - nodeId: "custom_router"
+            dependsOn: ["input_node"]
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input_node"
+                value: "customer service"
+                ignoreCase: true
+              thenStep:
+                prompt: "Provide excellent customer service for: {input_node}"
+                tool: customerServiceTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input_node"
+                    value: "technical support"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Provide technical support for: {input_node}"
+                    tool: techSupportTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input_node"
+                        value: "sales"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Handle sales inquiry: {input_node}"
+                        tool: salesTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input_node"
+                            value: "product"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Provide product information for: {input_node}"
+                          elseStep:
+                            prompt: "Provide general assistance: {input_node}"
+                            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["custom_router"]
+            prompt: "Present final custom routing response: {custom_router}"
 
     # Example 3: E-commerce specific routes
     - name: ecommerceAgent
-      model: openai
       systemPrompt: "You are an e-commerce specialist."
       workflow:
-        type: ROUTING
-        routes:
-          orderTracking:
-            prompt: "Track order status: {input}"
-            tool: orderTrackingTool
-          returnRequest:
-            prompt: "Process return request: {input}"
-            tool: returnTool
-          productRecommendation:
-            prompt: "Recommend products based on: {input}"
-            tool: recommendationTool
-          inventoryCheck:
-            prompt: "Check inventory for: {input}"
-            tool: inventoryTool
-          shippingInfo:
-            prompt: "Provide shipping information: {input}"
+        type: graph
+        chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize e-commerce request: {input}"
+            
+          - nodeId: "ecommerce_router"
+            dependsOn: ["input_node"]
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input_node"
+                value: "order"
+                ignoreCase: true
+              thenStep:
+                prompt: "Track order status: {input_node}"
+                tool: orderTrackingTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input_node"
+                    value: "return"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Process return request: {input_node}"
+                    tool: returnTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input_node"
+                        value: "recommend"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Recommend products based on: {input_node}"
+                        tool: recommendationTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input_node"
+                            value: "inventory"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Check inventory for: {input_node}"
+                            tool: inventoryTool
+                          elseStep:
+                            conditional:
+                              condition:
+                                type: CONTAINS
+                                field: "input_node"
+                                value: "shipping"
+                                ignoreCase: true
+                              thenStep:
+                                prompt: "Provide shipping information: {input_node}"
+                              elseStep:
+                                prompt: "General e-commerce assistance for: {input_node}"
+                                
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["ecommerce_router"]
+            prompt: "Present final e-commerce response: {ecommerce_router}"
 
     # Example 4: Healthcare specific routes
     - name: healthcareAgent
       model: openai
       systemPrompt: "You are a healthcare information assistant."
       workflow:
-        type: ROUTING
-        routes:
-          appointmentScheduling:
-            prompt: "Help schedule appointment: {input}"
-            tool: schedulingTool
-          symptomChecker:
-            prompt: "Provide symptom information: {input}"
-            tool: symptomTool
-          medicationInfo:
-            prompt: "Provide medication information: {input}"
-            tool: medicationTool
-          insuranceVerification:
-            prompt: "Verify insurance coverage: {input}"
-            tool: insuranceTool
+        type: graph
+        chain:
+          - nodeId: "healthcare_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "appointment"
+                ignoreCase: true
+              thenStep:
+                prompt: "Help schedule appointment: {input}"
+                tool: schedulingTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "symptom"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Provide symptom information: {input}"
+                    tool: symptomTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "medication"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Provide medication information: {input}"
+                        tool: medicationTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "insurance"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Verify insurance coverage: {input}"
+                            tool: insuranceTool
+                          elseStep:
+                            prompt: "General healthcare information assistance for: {input}"
 
     # Example 5: Mixed route types (some with tools, some without)
     - name: mixedRoutingAgent
       model: openai
       systemPrompt: "You handle various types of requests."
       workflow:
-        type: ROUTING
-        routes:
-          # Route with both prompt and tool
-          dataAnalysis:
-            prompt: "Analyze the data: {input}"
-            tool: analyticsTool
-          # Route with only prompt (no tool)
-          generalAdvice:
-            prompt: "Provide general advice for: {input}"
-          # Route with only tool (no prompt)
-          quickLookup:
-            tool: lookupTool
-          # Another mixed route
-          reportGeneration:
-            prompt: "Generate report for: {input}"
-            tool: reportTool
+        type: graph
+        chain:
+          - nodeId: "mixed_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "data"
+                ignoreCase: true
+              thenStep:
+                prompt: "Analyze the data: {input}"
+                tool: analyticsTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "advice"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Provide general advice for: {input}"
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "lookup"
+                        ignoreCase: true
+                      thenStep:
+                        tool: lookupTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "report"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Generate report for: {input}"
+                            tool: reportTool
+                          elseStep:
+                            prompt: "General assistance for: {input}"
 
     # Example 6: International/Localized routes
     - name: internationalAgent
       model: openai
       systemPrompt: "You provide international support."
       workflow:
-        type: ROUTING
-        routes:
-          # Routes with international naming
-          supportEnglish:
-            prompt: "Provide English support: {input}"
-            tool: englishSupportTool
-          supportSpanish:
-            prompt: "Proporcionar soporte en español: {input}"
-            tool: spanishSupportTool
-          supportFrench:
-            prompt: "Fournir un support en français: {input}"
-            tool: frenchSupportTool
-          currencyConversion:
-            prompt: "Convert currency: {input}"
-            tool: currencyTool
-          timeZoneHelp:
-            prompt: "Help with time zones: {input}"
-            tool: timeZoneTool
+        type: graph
+        chain:
+          - nodeId: "international_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "english"
+                ignoreCase: true
+              thenStep:
+                prompt: "Provide English support: {input}"
+                tool: englishSupportTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "spanish"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Proporcionar soporte en español: {input}"
+                    tool: spanishSupportTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "french"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Fournir un support en français: {input}"
+                        tool: frenchSupportTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "currency"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Convert currency: {input}"
+                            tool: currencyTool
+                          elseStep:
+                            conditional:
+                              condition:
+                                type: CONTAINS
+                                field: "input"
+                                value: "time"
+                                ignoreCase: true
+                              thenStep:
+                                prompt: "Help with time zones: {input}"
+                                tool: timeZoneTool
+                              elseStep:
+                                prompt: "General international support for: {input}"
 
     # Example 7: Complex nested route names
     - name: complexNamingAgent
       model: openai
       systemPrompt: "You handle complex routing scenarios."
       workflow:
-        type: ROUTING
-        routes:
-          # Routes with complex names (underscores, numbers, etc.)
-          user_account_management:
-            prompt: "Manage user account: {input}"
-            tool: accountTool
-          api_v2_integration:
-            prompt: "Handle API v2 integration: {input}"
-            tool: apiTool
-          database_query_optimization:
-            prompt: "Optimize database query: {input}"
-            tool: dbTool
-          real_time_monitoring:
-            prompt: "Monitor in real-time: {input}"
-            tool: monitoringTool
-          machine_learning_inference:
-            prompt: "Run ML inference: {input}"
-            tool: mlTool
+        type: graph
+        chain:
+          - nodeId: "complex_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "account"
+                ignoreCase: true
+              thenStep:
+                prompt: "Manage user account: {input}"
+                tool: accountTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "api"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Handle API v2 integration: {input}"
+                    tool: apiTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "database"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Optimize database query: {input}"
+                        tool: dbTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "monitoring"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Monitor in real-time: {input}"
+                            tool: monitoringTool
+                          elseStep:
+                            conditional:
+                              condition:
+                                type: CONTAINS
+                                field: "input"
+                                value: "machine learning"
+                                ignoreCase: true
+                              thenStep:
+                                prompt: "Run ML inference: {input}"
+                                tool: mlTool
+                              elseStep:
+                                prompt: "General complex system assistance for: {input}"
 
     # Example 8: Single route agent (edge case)
     - name: singleRouteAgent
       model: openai
       systemPrompt: "You handle one specific type of request."
       workflow:
-        type: ROUTING
-        routes:
-          specializedTask:
+        type: graph
+        chain:
+          - nodeId: "specialized_task"
             prompt: "Handle specialized task: {input}"
             tool: specializedTool
 
@@ -179,15 +426,97 @@ app:
       model: openai
       systemPrompt: "You handle many different types of requests."
       workflow:
-        type: ROUTING
-        routes:
-          route01: { prompt: "Handle route 01: {input}" }
-          route02: { prompt: "Handle route 02: {input}" }
-          route03: { prompt: "Handle route 03: {input}" }
-          route04: { prompt: "Handle route 04: {input}" }
-          route05: { prompt: "Handle route 05: {input}" }
-          route06: { prompt: "Handle route 06: {input}" }
-          route07: { prompt: "Handle route 07: {input}" }
-          route08: { prompt: "Handle route 08: {input}" }
-          route09: { prompt: "Handle route 09: {input}" }
-          route10: { prompt: "Handle route 10: {input}" }
+        type: graph
+        chain:
+          - nodeId: "many_routes_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "01"
+                ignoreCase: true
+              thenStep:
+                prompt: "Handle route 01: {input}"
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "02"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Handle route 02: {input}"
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "03"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Handle route 03: {input}"
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "04"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Handle route 04: {input}"
+                          elseStep:
+                            conditional:
+                              condition:
+                                type: CONTAINS
+                                field: "input"
+                                value: "05"
+                                ignoreCase: true
+                              thenStep:
+                                prompt: "Handle route 05: {input}"
+                              elseStep:
+                                conditional:
+                                  condition:
+                                    type: CONTAINS
+                                    field: "input"
+                                    value: "06"
+                                    ignoreCase: true
+                                  thenStep:
+                                    prompt: "Handle route 06: {input}"
+                                  elseStep:
+                                    conditional:
+                                      condition:
+                                        type: CONTAINS
+                                        field: "input"
+                                        value: "07"
+                                        ignoreCase: true
+                                      thenStep:
+                                        prompt: "Handle route 07: {input}"
+                                      elseStep:
+                                        conditional:
+                                          condition:
+                                            type: CONTAINS
+                                            field: "input"
+                                            value: "08"
+                                            ignoreCase: true
+                                          thenStep:
+                                            prompt: "Handle route 08: {input}"
+                                          elseStep:
+                                            conditional:
+                                              condition:
+                                                type: CONTAINS
+                                                field: "input"
+                                                value: "09"
+                                                ignoreCase: true
+                                              thenStep:
+                                                prompt: "Handle route 09: {input}"
+                                              elseStep:
+                                                conditional:
+                                                  condition:
+                                                    type: CONTAINS
+                                                    field: "input"
+                                                    value: "10"
+                                                    ignoreCase: true
+                                                  thenStep:
+                                                    prompt: "Handle route 10: {input}"
+                                                  elseStep:
+                                                    prompt: "General assistance for: {input}"

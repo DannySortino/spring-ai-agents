@@ -44,119 +44,86 @@ logging:
     com.springai.agent: DEBUG
     org.springframework.ai: DEBUG
 
-app:
-  agents:
-    - name: simpleAgent
-      model: openai
-      systemPrompt: "You are a helpful assistant."
+# Visualization Features Configuration
+visualization:
+  # Enable graph structure visualization
+  graphStructure: true
+  
+  # Enable real-time execution status tracking
+  realTimeStatus: true
+  
+  # Enable interactive graph creation web interface
+  interactiveCreator: true
+  
+  # Visualization configuration
+  basePath: "/visualization"
+  websocketEndpoint: "/ws/status"
+
+# Agents Configuration - Top-level for clean binding
+# 
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node' in their workflows:
+# - input_node: Defines where the agent receives inbound messages from agentService.invoke()
+# - output_node: Defines what the agent returns as the final result
+# These nodes are required for proper workflow execution and validation.
+agents:
+  list:
+    # Simple example agent for visualization demo
+    - name: "demo-processor"
+      systemPrompt: "You are a data processing expert. Analyze data step by step."
       workflow:
-        type: CHAIN
+        type: graph
         chain:
-          - prompt: "Answer the question: {input}"
-      mcpServer:
-        enabled: true
-        description: "Simple assistant agent MCP server"
+          # REQUIRED: input_node - Entry point for user requests
+          - nodeId: "input_node"
+            prompt: "Receive and prepare input for processing: {input}"
+            
+          - nodeId: "extract"
+            dependsOn: ["input_node"]
+            prompt: "Extract key information from: {input_node}"
+            
+          - nodeId: "analyze"
+            dependsOn: ["extract"]
+            prompt: "Analyze the extracted data: {extract}"
+            
+          - nodeId: "summarize"
+            dependsOn: ["analyze"]
+            prompt: "Create a summary based on analysis: {analyze}"
+            
+          # REQUIRED: output_node - Final result returned to user
+          - nodeId: "output_node"
+            dependsOn: ["summarize"]
+            prompt: "Format final output: {summarize}"
 
-    - name: toolCallingAgent
-      model: openai
-      systemPrompt: "You are a billing specialist with access to various tools."
+    # Parallel processing example
+    - name: "research-agent"
+      systemPrompt: "You are a research assistant conducting comprehensive analysis."
       workflow:
-        type: CHAIN
+        type: graph
         chain:
-          - prompt: "Analyzing billing request: {input}"
-          - tool: "invoiceTool"
-          - prompt: "Based on the tool result, provide a comprehensive response"
-
-    - name: billingAgent
-      model: openai
-      systemPrompt: "You are a billing expert. Handle all billing requests with precision and care."
-      workflow:
-        type: ROUTING
-        routes:
-          invoice:
-            prompt: "Fetch invoice details for {invoiceId}. Provide comprehensive information including amount, date, status, and line items."
-            tool: invoiceTool
-          dispute:
-            prompt: "Initiate dispute process for transaction {transactionId}. Gather all necessary information and start the dispute workflow."
-            tool: disputeTool
-          payment:
-            prompt: "Process payment for {amount} using {paymentMethod}. Ensure all security protocols are followed."
-            tool: paymentTool
-      mcpServer:
-        enabled: true
-        description: "Billing expert agent MCP server with routing capabilities"
-
-    - name: complexAgent
-      model: openai
-      systemPrompt: "You are a multifunctional assistant capable of complex analysis and reporting."
-      workflow:
-        type: PARALLEL
-        tasks:
-          - name: testTask
-            workflow:
-              type: CHAIN
-              chain:
-                - prompt: "Simple test prompt: {input}"
-        aggregator: "Combine results: {results}"
-      mcpServer:
-        enabled: true
-        description: "Complex analysis agent MCP server with parallel processing"
-
-    - name: conditionalAgent
-      model: openai
-      systemPrompt: "You are an intelligent assistant with conditional logic capabilities."
-      workflow:
-        type: CHAIN
-        chain:
-          - prompt: "Analyzing request: {input}"
-          - conditional:
-              condition:
-                type: CONTAINS
-                field: "input"
-                value: "urgent"
-                ignoreCase: true
-              thenStep:
-                prompt: "This is an URGENT request. Prioritizing immediate response: {input}"
-              elseStep:
-                prompt: "Processing standard request: {input}"
-          - conditional:
-              condition:
-                type: CONTAINS
-                field: "previousResult"
-                value: "URGENT"
-              thenStep:
-                tool: "emergencyTool"
-              elseStep:
-                tool: "standardTool"
-      mcpServer:
-        enabled: true
-        description: "Conditional logic agent with if/then/else capabilities"
-
-    - name: smartRoutingAgent
-      model: openai
-      systemPrompt: "You are a smart routing assistant that makes decisions based on input content."
-      workflow:
-        type: CHAIN
-        chain:
-          - conditional:
-              condition:
-                type: REGEX
-                field: "input"
-                value: ".*invoice.*|.*bill.*|.*payment.*"
-              thenStep:
-                prompt: "Detected billing-related request. Routing to billing system: {input}"
-              elseStep:
-                conditional:
-                  condition:
-                    type: CONTAINS
-                    field: "input"
-                    value: "support"
-                    ignoreCase: true
-                  thenStep:
-                    prompt: "Detected support request. Routing to support system: {input}"
-                  elseStep:
-                    prompt: "General request detected. Processing normally: {input}"
-          - prompt: "Final processing: {input}"
-      mcpServer:
-        enabled: true
-        description: "Smart routing agent with nested conditional logic"
+          # REQUIRED: input_node - Entry point for user requests
+          - nodeId: "input_node"
+            prompt: "Receive and categorize research request: {input}"
+            
+          - nodeId: "initial_research"
+            dependsOn: ["input_node"]
+            prompt: "Conduct initial research on: {input_node}"
+            
+          - nodeId: "technical_analysis"
+            dependsOn: ["initial_research"]
+            prompt: "Perform technical analysis: {initial_research}"
+            
+          - nodeId: "market_analysis"
+            dependsOn: ["initial_research"]
+            prompt: "Perform market analysis: {initial_research}"
+            
+          - nodeId: "final_report"
+            dependsOn: ["technical_analysis", "market_analysis"]
+            prompt: |
+              Generate comprehensive report:
+              Technical: {technical_analysis}
+              Market: {market_analysis}
+              
+          # REQUIRED: output_node - Final result returned to user
+          - nodeId: "output_node"
+            dependsOn: ["final_report"]
+            prompt: "Present final research report: {final_report}"

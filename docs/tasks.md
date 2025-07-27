@@ -13,8 +13,8 @@ This document contains a comprehensive list of actionable improvement tasks for 
 ### 1.2 Error Handling
 - [ ] Add comprehensive error handling in all workflow implementations
 - [ ] Implement custom exception classes for different error scenarios (WorkflowExecutionException, ConfigurationException, etc.)
-- [ ] Add try-catch blocks with proper error recovery in `ChainWorkflow.execute()`
-- [ ] Handle `CompletableFuture` exceptions properly in `ParallelizationWorkflow`
+- [ ] Add try-catch blocks with proper error recovery in `GraphWorkflow.execute()`
+- [ ] Handle `CompletableFuture` exceptions properly in `GraphWorkflow` parallel execution
 - [ ] Add timeout handling for ChatClient calls to prevent hanging requests
 - [ ] Implement circuit breaker pattern for external service calls
 
@@ -59,7 +59,7 @@ This document contains a comprehensive list of actionable improvement tasks for 
 - [ ] Implement proper dependency injection for workflow dependencies
 
 ### 3.2 Interface Design
-- [ ] Add more specific workflow interfaces (e.g., `ParallelWorkflow`, `ChainWorkflow`) extending base `Workflow`
+- [ ] Add more specific workflow interfaces (e.g., `GraphWorkflow`, `OrchestratorWorkflow`) extending base `Workflow`
 - [ ] Implement builder pattern for complex workflow configurations
 - [ ] Add workflow lifecycle methods (initialize, validate, cleanup)
 - [ ] Create workflow metadata interface for introspection capabilities
@@ -80,7 +80,7 @@ This document contains a comprehensive list of actionable improvement tasks for 
 ## 4. Performance & Scalability
 
 ### 4.1 Resource Management
-- [ ] Fix `ExecutorService` resource leak in `ParallelizationWorkflow` by implementing proper shutdown
+- [ ] Fix `ExecutorService` resource leak in `GraphWorkflow` by implementing proper shutdown
 - [ ] Implement connection pooling for ChatClient instances
 - [ ] Add request/response caching mechanisms
 - [ ] Implement lazy loading for workflow configurations

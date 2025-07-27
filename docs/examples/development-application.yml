@@ -49,99 +49,145 @@ logging:
     root: INFO
 
 # Development-focused agent configurations
-app:
-  agents:
+# 
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
+agents:
+  list:
     # Development testing agent with tool integration
     - name: devTestAgent
-      model: openai
-      system-prompt: "You are a development testing assistant with access to various tools."
+      systemPrompt: "You are a development testing assistant with access to various tools."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Analyzing development request: {input}"
-          - tool: "dataTool"
-          - prompt: "Processing tool results and providing development insights"
-      mcp-server:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive development request: {input}"
+            
+          - nodeId: "analyze_request"
+            dependsOn: ["input_node"]
+            prompt: "Analyzing development request: {input_node}"
+            
+          - nodeId: "data_tool_call"
+            dependsOn: ["analyze_request"]
+            tool: "dataTool"
+            
+          - nodeId: "process_results"
+            dependsOn: ["data_tool_call"]
+            prompt: "Processing tool results and providing development insights"
+            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["process_results"]
+            prompt: "Present development analysis results: {process_results}"
+      mcpServer:
         enabled: true
         port: 8083
         description: "Development testing agent MCP server"
-        base-url: "/api/agents/devTestAgent/mcp"
+        baseUrl: "/api/agents/devTestAgent/mcp"
 
     # Parallel processing agent for testing concurrent workflows
     - name: parallelTestAgent
       model: openai
       system-prompt: "You are a parallel processing test agent."
       workflow:
-        type: parallel
-        tasks:
-          - name: validationTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Validate input data: {input}"
-          - name: processingTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Process the data: {input}"
-          - name: analysisTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Analyze results for: {input}"
-        aggregator: "Development test results: {results}"
+        type: graph
+        chain:
+          # Parallel tasks (no dependencies between them)
+          - nodeId: "validation_task"
+            prompt: "Validate input data: {input}"
+          - nodeId: "processing_task"
+            prompt: "Process the data: {input}"
+          - nodeId: "analysis_task"
+            prompt: "Analyze results for: {input}"
+          # Aggregator depends on all parallel tasks
+          - nodeId: "aggregator"
+            dependsOn: ["validation_task", "processing_task", "analysis_task"]
+            prompt: "Development test results: validation: {validation_task}, processing: {processing_task}, analysis: {analysis_task}"
 
     # Orchestrator agent for testing complex workflows
     - name: orchestratorTestAgent
       model: openai
       system-prompt: "You are an orchestrator test agent for development."
       workflow:
-        type: orchestrator
-        manager-prompt: |
-          Development workflow management for: {input}
-          Coordinate testing workers efficiently.
-        workers:
-          - name: unitTestWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Perform unit testing analysis: {input}"
-          - name: integrationTestWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Perform integration testing analysis: {input}"
-          - name: performanceTestWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Perform performance testing analysis: {input}"
-        synthesizer-prompt: |
-          Development Test Summary
-          Manager Decision: {managerDecision}
-          Worker Results: {workerResults}
-          
-          Provide comprehensive development testing report.
+        type: graph
+        chain:
+          # Manager node
+          - nodeId: "manager"
+            prompt: |
+              Development workflow management for: {input}
+              Coordinate testing workers efficiently.
+          # Worker nodes (depend on manager)
+          - nodeId: "unit_test_worker"
+            dependsOn: ["manager"]
+            prompt: "Unit Test Worker - Manager decision: {manager} - Perform unit testing analysis: {input}"
+          - nodeId: "integration_test_worker"
+            dependsOn: ["manager"]
+            prompt: "Integration Test Worker - Manager decision: {manager} - Perform integration testing analysis: {input}"
+          - nodeId: "performance_test_worker"
+            dependsOn: ["manager"]
+            prompt: "Performance Test Worker - Manager decision: {manager} - Perform performance testing analysis: {input}"
+          # Synthesizer node (depends on all workers)
+          - nodeId: "synthesizer"
+            dependsOn: ["unit_test_worker", "integration_test_worker", "performance_test_worker"]
+            prompt: |
+              Development Test Summary
+              Manager Decision: {manager}
+              Worker Results: Unit Test: {unit_test_worker}, Integration Test: {integration_test_worker}, Performance Test: {performance_test_worker}
+              
+              Provide comprehensive development testing report.
 
     # Advanced routing agent with multiple tools
     - name: advancedRoutingAgent
       model: openai
       system-prompt: "You are an advanced routing agent with comprehensive tool access."
       workflow:
-        type: routing
-        routes:
-          data:
-            prompt: "Handle data request: {input}"
-            tool: dataTool
-          analytics:
-            prompt: "Perform analytics on: {input}"
-            tool: analyticsTool
-          testing:
-            prompt: "Execute testing for: {input}"
-            tool: testingTool
-          debugging:
-            prompt: "Debug the issue: {input}"
-            tool: debugTool
+        type: graph
+        chain:
+          - nodeId: "advanced_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "data"
+                ignoreCase: true
+              thenStep:
+                prompt: "Handle data request: {input}"
+                tool: dataTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "analytics"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Perform analytics on: {input}"
+                    tool: analyticsTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "testing"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Execute testing for: {input}"
+                        tool: testingTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "debug"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Debug the issue: {input}"
+                            tool: debugTool
+                          elseStep:
+                            prompt: "General development assistance for: {input}"
       mcp-server:
         enabled: true
         port: 8084

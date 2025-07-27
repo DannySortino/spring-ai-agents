@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  * Model Context Protocol (MCP) servers and provides configurable AI agents through
  * Spring Boot's configuration properties.
  * 
- * @author Spring AI Agent Team
+ * @author Danny Sortino
  * @since 1.0.0
  */
 @SpringBootApplication

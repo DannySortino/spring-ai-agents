@@ -3,6 +3,11 @@
 # =============================================================================
 # This configuration is optimized for production environments with enterprise
 # features, security, performance optimization, and robust error handling.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:
@@ -85,56 +90,77 @@ management:
         enabled: true
 
 # Production agent configurations
-app:
-  agents:
+agents:
+  list:
     # Enterprise billing agent with comprehensive workflow
     - name: enterpriseBillingAgent
-      model: openai
-      system-prompt: |
+      systemPrompt: |
         You are an enterprise-grade billing specialist with advanced capabilities.
         Handle complex billing scenarios, enterprise contracts, and multi-currency transactions.
         Ensure compliance with international financial regulations and maintain audit trails.
       workflow:
-        type: orchestrator
-        manager-prompt: |
-          Enterprise billing request analysis: {input}
-          
-          Evaluate complexity, compliance requirements, and processing priority.
-          Determine optimal worker assignment for maximum efficiency and accuracy.
-        workers:
-          - name: complianceWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Review compliance requirements for: {input}"
-                - tool: "complianceTool"
-                - prompt: "Validate against current regulations and generate compliance report"
-          - name: calculationWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Perform detailed billing calculations for: {input}"
-                - tool: "billingCalculatorTool"
-                - prompt: "Apply taxes, discounts, and currency conversions with audit trail"
-          - name: auditWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Audit the billing process for: {input}"
-                - tool: "auditTool"
-                - prompt: "Generate comprehensive audit documentation"
-        synthesizer-prompt: |
-          Enterprise Billing Decision Synthesis
-          
-          Manager Assessment: {managerDecision}
-          Worker Results: {workerResults}
-          
-          Generate comprehensive billing response with:
-          1. Executive Summary
-          2. Compliance Certification
-          3. Detailed Calculations
-          4. Audit Trail
-          5. Risk Assessment
+        type: graph
+        chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize enterprise billing request: {input}"
+            
+          # Manager node
+          - nodeId: "manager"
+            dependsOn: ["input_node"]
+            prompt: |
+              Enterprise billing request analysis: {input_node}
+              
+              Evaluate complexity, compliance requirements, and processing priority.
+              Determine optimal worker assignment for maximum efficiency and accuracy.
+          # Worker nodes (depend on manager)
+          - nodeId: "compliance_worker"
+            dependsOn: ["manager"]
+            prompt: "Compliance Worker - Manager decision: {manager} - Review compliance requirements for: {input_node}"
+          - nodeId: "compliance_tool_call"
+            dependsOn: ["compliance_worker"]
+            tool: "complianceTool"
+          - nodeId: "compliance_validation"
+            dependsOn: ["compliance_tool_call"]
+            prompt: "Validate against current regulations and generate compliance report"
+          - nodeId: "calculation_worker"
+            dependsOn: ["manager"]
+            prompt: "Calculation Worker - Manager decision: {manager} - Perform detailed billing calculations for: {input_node}"
+          - nodeId: "billing_tool_call"
+            dependsOn: ["calculation_worker"]
+            tool: "billingCalculatorTool"
+          - nodeId: "calculation_finalization"
+            dependsOn: ["billing_tool_call"]
+            prompt: "Apply taxes, discounts, and currency conversions with audit trail"
+          - nodeId: "audit_worker"
+            dependsOn: ["manager"]
+            prompt: "Audit Worker - Manager decision: {manager} - Audit the billing process for: {input_node}"
+          - nodeId: "audit_tool_call"
+            dependsOn: ["audit_worker"]
+            tool: "auditTool"
+          - nodeId: "audit_documentation"
+            dependsOn: ["audit_tool_call"]
+            prompt: "Generate comprehensive audit documentation"
+          # Synthesizer node (depends on all worker final steps)
+          - nodeId: "synthesizer"
+            dependsOn: ["compliance_validation", "calculation_finalization", "audit_documentation"]
+            prompt: |
+              Enterprise Billing Decision Synthesis
+              
+              Manager Assessment: {manager}
+              Worker Results: Compliance: {compliance_validation}, Calculations: {calculation_finalization}, Audit: {audit_documentation}
+              
+              Generate comprehensive billing response with:
+              1. Executive Summary
+              2. Compliance Certification
+              3. Detailed Calculations
+              4. Audit Trail
+              5. Risk Assessment
+              
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["synthesizer"]
+            prompt: "Present final enterprise billing response: {synthesizer}"
 
     # Production analytics agent with parallel processing
     - name: productionAnalyticsAgent
@@ -143,47 +169,55 @@ app:
         You are a production-grade analytics agent optimized for enterprise data processing.
         Handle large-scale data analysis with focus on performance, accuracy, and scalability.
       workflow:
-        type: parallel
-        tasks:
-          - name: dataValidationTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Validate data integrity and quality for: {input}"
-                - tool: "dataValidationTool"
-                - prompt: "Generate comprehensive data quality report"
-          - name: performanceAnalysisTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Perform high-performance analysis on: {input}"
-                - tool: "performanceAnalyticsTool"
-                - prompt: "Generate statistical insights and performance benchmarks"
-          - name: predictiveModelingTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Apply predictive modeling to: {input}"
-                - tool: "predictiveModelingTool"
-                - prompt: "Generate forecasts with confidence intervals"
-          - name: riskAssessmentTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Assess risks related to: {input}"
-                - tool: "riskAssessmentTool"
-                - prompt: "Provide risk mitigation strategies"
-        aggregator: |
-          Enterprise Analytics Synthesis: {results}
-          
-          Create comprehensive analytics report including:
-          1. Executive Dashboard
-          2. Data Quality Assessment
-          3. Performance Analysis
-          4. Predictive Insights
-          5. Risk Assessment
-          6. Strategic Recommendations
-          7. Implementation Roadmap
+        type: graph
+        chain:
+          # Parallel tasks (no dependencies between them)
+          - nodeId: "data_validation_start"
+            prompt: "Validate data integrity and quality for: {input}"
+          - nodeId: "data_validation_tool"
+            dependsOn: ["data_validation_start"]
+            tool: "dataValidationTool"
+          - nodeId: "data_validation_report"
+            dependsOn: ["data_validation_tool"]
+            prompt: "Generate comprehensive data quality report"
+          - nodeId: "performance_analysis_start"
+            prompt: "Perform high-performance analysis on: {input}"
+          - nodeId: "performance_analysis_tool"
+            dependsOn: ["performance_analysis_start"]
+            tool: "performanceAnalyticsTool"
+          - nodeId: "performance_analysis_insights"
+            dependsOn: ["performance_analysis_tool"]
+            prompt: "Generate statistical insights and performance benchmarks"
+          - nodeId: "predictive_modeling_start"
+            prompt: "Apply predictive modeling to: {input}"
+          - nodeId: "predictive_modeling_tool"
+            dependsOn: ["predictive_modeling_start"]
+            tool: "predictiveModelingTool"
+          - nodeId: "predictive_modeling_forecasts"
+            dependsOn: ["predictive_modeling_tool"]
+            prompt: "Generate forecasts with confidence intervals"
+          - nodeId: "risk_assessment_start"
+            prompt: "Assess risks related to: {input}"
+          - nodeId: "risk_assessment_tool"
+            dependsOn: ["risk_assessment_start"]
+            tool: "riskAssessmentTool"
+          - nodeId: "risk_assessment_strategies"
+            dependsOn: ["risk_assessment_tool"]
+            prompt: "Provide risk mitigation strategies"
+          # Aggregator depends on all parallel task final steps
+          - nodeId: "aggregator"
+            dependsOn: ["data_validation_report", "performance_analysis_insights", "predictive_modeling_forecasts", "risk_assessment_strategies"]
+            prompt: |
+              Enterprise Analytics Synthesis: Data Validation: {data_validation_report}, Performance Analysis: {performance_analysis_insights}, Predictive Modeling: {predictive_modeling_forecasts}, Risk Assessment: {risk_assessment_strategies}
+              
+              Create comprehensive analytics report including:
+              1. Executive Dashboard
+              2. Data Quality Assessment
+              3. Performance Analysis
+              4. Predictive Insights
+              5. Risk Assessment
+              6. Strategic Recommendations
+              7. Implementation Roadmap
 
     # Production support agent with intelligent routing
     - name: productionSupportAgent
@@ -192,23 +226,60 @@ app:
         You are a production support specialist handling critical system issues.
         Prioritize system stability, provide rapid incident resolution, and maintain SLA compliance.
       workflow:
-        type: routing
-        routes:
-          critical:
-            prompt: "Handle critical incident: {input}. Initiate emergency protocols and escalation procedures."
-            tool: emergencyResponseTool
-          performance:
-            prompt: "Investigate performance issue: {input}. Analyze system metrics and identify bottlenecks."
-            tool: performanceAnalysisTool
-          security:
-            prompt: "Address security concern: {input}. Implement security protocols and threat mitigation."
-            tool: securityAnalysisTool
-          maintenance:
-            prompt: "Schedule maintenance for: {input}. Coordinate with stakeholders and minimize downtime."
-            tool: maintenanceSchedulerTool
-          monitoring:
-            prompt: "Configure monitoring for: {input}. Set up alerts and performance thresholds."
-            tool: monitoringConfigTool
+        type: graph
+        chain:
+          - nodeId: "support_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "critical"
+                ignoreCase: true
+              thenStep:
+                prompt: "Handle critical incident: {input}. Initiate emergency protocols and escalation procedures."
+                tool: emergencyResponseTool
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "performance"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Investigate performance issue: {input}. Analyze system metrics and identify bottlenecks."
+                    tool: performanceAnalysisTool
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "security"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Address security concern: {input}. Implement security protocols and threat mitigation."
+                        tool: securityAnalysisTool
+                      elseStep:
+                        conditional:
+                          condition:
+                            type: CONTAINS
+                            field: "input"
+                            value: "maintenance"
+                            ignoreCase: true
+                          thenStep:
+                            prompt: "Schedule maintenance for: {input}. Coordinate with stakeholders and minimize downtime."
+                            tool: maintenanceSchedulerTool
+                          elseStep:
+                            conditional:
+                              condition:
+                                type: CONTAINS
+                                field: "input"
+                                value: "monitoring"
+                                ignoreCase: true
+                              thenStep:
+                                prompt: "Configure monitoring for: {input}. Set up alerts and performance thresholds."
+                                tool: monitoringConfigTool
+                              elseStep:
+                                prompt: "General production support assistance for: {input}"
       mcp-server:
         enabled: true
         port: 8444
@@ -224,44 +295,56 @@ app:
         customer data and business tools. Provide exceptional service while maintaining
         data privacy and security compliance.
       workflow:
-        type: orchestrator
-        manager-prompt: |
-          Customer service request analysis: {input}
-          
-          Evaluate customer tier, request complexity, and service level requirements.
-          Coordinate appropriate specialists for optimal customer experience.
-        workers:
-          - name: accountSpecialist
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Review customer account details for: {input}"
-                - tool: "customerAccountTool"
-                - prompt: "Provide account-specific recommendations"
-          - name: technicalSpecialist
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Analyze technical aspects of: {input}"
-                - tool: "technicalSupportTool"
-                - prompt: "Provide technical solutions and guidance"
-          - name: billingSpecialist
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Handle billing aspects of: {input}"
-                - tool: "billingTool"
-                - prompt: "Resolve billing inquiries and provide explanations"
-        synthesizer-prompt: |
-          Enterprise Customer Service Response
-          
-          Manager Assessment: {managerDecision}
-          Specialist Results: {workerResults}
-          
-          Provide comprehensive customer service response with:
-          1. Immediate Resolution
-          2. Account Status Update
-          3. Technical Recommendations
-          4. Billing Clarifications
-          5. Follow-up Actions
-          6. Escalation Path (if needed)
+        type: graph
+        chain:
+          # Manager node
+          - nodeId: "manager"
+            prompt: |
+              Customer service request analysis: {input}
+              
+              Evaluate customer tier, request complexity, and service level requirements.
+              Coordinate appropriate specialists for optimal customer experience.
+          # Worker nodes (depend on manager)
+          - nodeId: "account_specialist"
+            dependsOn: ["manager"]
+            prompt: "Account Specialist - Manager decision: {manager} - Review customer account details for: {input}"
+          - nodeId: "account_tool_call"
+            dependsOn: ["account_specialist"]
+            tool: "customerAccountTool"
+          - nodeId: "account_recommendations"
+            dependsOn: ["account_tool_call"]
+            prompt: "Provide account-specific recommendations"
+          - nodeId: "technical_specialist"
+            dependsOn: ["manager"]
+            prompt: "Technical Specialist - Manager decision: {manager} - Analyze technical aspects of: {input}"
+          - nodeId: "technical_tool_call"
+            dependsOn: ["technical_specialist"]
+            tool: "technicalSupportTool"
+          - nodeId: "technical_solutions"
+            dependsOn: ["technical_tool_call"]
+            prompt: "Provide technical solutions and guidance"
+          - nodeId: "billing_specialist"
+            dependsOn: ["manager"]
+            prompt: "Billing Specialist - Manager decision: {manager} - Handle billing aspects of: {input}"
+          - nodeId: "billing_tool_call"
+            dependsOn: ["billing_specialist"]
+            tool: "billingTool"
+          - nodeId: "billing_explanations"
+            dependsOn: ["billing_tool_call"]
+            prompt: "Resolve billing inquiries and provide explanations"
+          # Synthesizer node (depends on all worker final steps)
+          - nodeId: "synthesizer"
+            dependsOn: ["account_recommendations", "technical_solutions", "billing_explanations"]
+            prompt: |
+              Enterprise Customer Service Response
+              
+              Manager Assessment: {manager}
+              Specialist Results: Account: {account_recommendations}, Technical: {technical_solutions}, Billing: {billing_explanations}
+              
+              Provide comprehensive customer service response with:
+              1. Immediate Resolution
+              2. Account Status Update
+              3. Technical Recommendations
+              4. Billing Clarifications
+              5. Follow-up Actions
+              6. Escalation Path (if needed)

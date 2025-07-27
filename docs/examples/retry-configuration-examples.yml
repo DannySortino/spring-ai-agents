@@ -3,6 +3,11 @@
 # =============================================================================
 # This file demonstrates various retry configuration patterns and strategies
 # for different use cases and scenarios in the Spring AI Agent Platform.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:
@@ -15,27 +20,44 @@ spring:
 # Example 1: Basic Retry Configuration
 # =============================================================================
 # Simple retry setup with default exponential backoff
-app:
-  # Application-wide default retry configuration
-  defaultRetry:
-    strategy: EXPONENTIAL
-    maxAttempts: 3
-    initialDelay: 1000
-    maxDelay: 10000
-    multiplier: 2.0
-    enabled: true
 
-  agents:
+# Application-wide default retry configuration
+defaultRetry:
+  strategy: EXPONENTIAL
+  maxAttempts: 3
+  initialDelay: 1000
+  maxDelay: 10000
+  multiplier: 2.0
+  enabled: true
+
+agents:
+  list:
     # Basic agent with default retry behavior
     - name: basicRetryAgent
-      model: openai
-      system-prompt: "You are a basic agent with retry capabilities."
+      systemPrompt: "You are a basic agent with retry capabilities."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Process request: {input}"
-          - tool: "externalAPI"  # This will use default retry
-          - prompt: "Provide response based on results"
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive user request: {input}"
+            
+          - nodeId: "process_request"
+            dependsOn: ["input_node"]
+            prompt: "Process request: {input_node}"
+            
+          - nodeId: "external_api_call"
+            dependsOn: ["process_request"]
+            tool: "externalAPI"  # This will use default retry
+            
+          - nodeId: "provide_response"
+            dependsOn: ["external_api_call"]
+            prompt: "Provide response based on results: {external_api_call}"
+            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["provide_response"]
+            prompt: "Present final response: {provide_response}"
 
 # =============================================================================
 # Example 2: Agent-Level Retry Override
@@ -60,11 +82,16 @@ app:
           - "IllegalArgumentException"
           - "SecurityException"
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Analyze request: {input}"
-          - tool: "unreliableService"  # Uses agent-level retry
-          - prompt: "Generate response from analysis"
+          - nodeId: "analyze_request"
+            prompt: "Analyze request: {input}"
+          - nodeId: "unreliable_service_call"
+            dependsOn: ["analyze_request"]
+            tool: "unreliableService"  # Uses agent-level retry
+          - nodeId: "generate_response"
+            dependsOn: ["unreliable_service_call"]
+            prompt: "Generate response from analysis"
 
 # =============================================================================
 # Example 3: Step-Level Retry Configuration
@@ -74,10 +101,11 @@ app:
       model: openai
       system-prompt: "You are an agent with step-specific retry configurations."
       workflow:
-        type: chain
+        type: graph
         chain:
           # Critical step with aggressive retry
-          - prompt: "Initial validation: {input}"
+          - nodeId: "initial_validation"
+            prompt: "Initial validation: {input}"
             retry:
               strategy: EXPONENTIAL
               maxAttempts: 7
@@ -86,7 +114,9 @@ app:
               multiplier: 1.5
           
           # External API call with jitter to prevent thundering herd
-          - tool: "externalAPI"
+          - nodeId: "external_api_call"
+            dependsOn: ["initial_validation"]
+            tool: "externalAPI"
             retry:
               strategy: EXPONENTIAL_JITTER
               maxAttempts: 5
@@ -98,7 +128,9 @@ app:
                 - "HttpRetryException"
           
           # Final processing with linear backoff
-          - prompt: "Final processing: {input}"
+          - nodeId: "final_processing"
+            dependsOn: ["external_api_call"]
+            prompt: "Final processing: {input}"
             retry:
               strategy: LINEAR
               maxAttempts: 3
@@ -113,42 +145,60 @@ app:
       model: openai
       system-prompt: "You are a routing agent with route-specific retry configurations."
       workflow:
-        type: routing
-        routes:
-          # Critical billing operations with aggressive retry
-          billing:
-            prompt: "Handle billing request: {input}"
-            tool: "billingService"
-            retry:
-              strategy: EXPONENTIAL_JITTER
-              maxAttempts: 7
-              initialDelay: 500
-              maxDelay: 60000
-              jitterFactor: 0.15
-              retryableExceptions:
-                - "PaymentException"
-                - "BillingServiceException"
-              nonRetryableExceptions:
-                - "InvalidAccountException"
-                - "InsufficientFundsException"
-          
-          # User queries with moderate retry
-          support:
-            prompt: "Handle support request: {input}"
-            tool: "supportService"
-            retry:
-              strategy: EXPONENTIAL
-              maxAttempts: 3
-              initialDelay: 1000
-              maxDelay: 10000
-          
-          # Analytics with no retry (fast fail for performance)
-          analytics:
-            prompt: "Generate analytics: {input}"
-            tool: "analyticsService"
-            retry:
-              strategy: NONE
-              maxAttempts: 1
+        type: graph
+        chain:
+          - nodeId: "route_router"
+            conditional:
+              condition:
+                type: CONTAINS
+                field: "input"
+                value: "billing"
+                ignoreCase: true
+              thenStep:
+                prompt: "Handle billing request: {input}"
+                tool: "billingService"
+                retry:
+                  strategy: EXPONENTIAL_JITTER
+                  maxAttempts: 7
+                  initialDelay: 500
+                  maxDelay: 60000
+                  jitterFactor: 0.15
+                  retryableExceptions:
+                    - "PaymentException"
+                    - "BillingServiceException"
+                  nonRetryableExceptions:
+                    - "InvalidAccountException"
+                    - "InsufficientFundsException"
+              elseStep:
+                conditional:
+                  condition:
+                    type: CONTAINS
+                    field: "input"
+                    value: "support"
+                    ignoreCase: true
+                  thenStep:
+                    prompt: "Handle support request: {input}"
+                    tool: "supportService"
+                    retry:
+                      strategy: EXPONENTIAL
+                      maxAttempts: 3
+                      initialDelay: 1000
+                      maxDelay: 10000
+                  elseStep:
+                    conditional:
+                      condition:
+                        type: CONTAINS
+                        field: "input"
+                        value: "analytics"
+                        ignoreCase: true
+                      thenStep:
+                        prompt: "Generate analytics: {input}"
+                        tool: "analyticsService"
+                        retry:
+                          strategy: NONE
+                          maxAttempts: 1
+                      elseStep:
+                        prompt: "General assistance for: {input}"
 
 # =============================================================================
 # Example 5: Production-Ready Retry Configuration
@@ -183,29 +233,31 @@ app:
           - "ValidationException"
           - "BadRequestException"
       workflow:
-        type: orchestrator
-        manager-prompt: "Coordinate enterprise workflow for: {input}"
-        workers:
-          - name: validationWorker
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Validate enterprise request: {input}"
-                  retry:
-                    strategy: FIXED_DELAY
-                    maxAttempts: 2
-                    initialDelay: 500
-          - name: processingWorker
-            workflow:
-              type: chain
-              chain:
-                - tool: "enterpriseService"
-                  retry:
-                    strategy: EXPONENTIAL_JITTER
-                    maxAttempts: 7
-                    initialDelay: 1000
-                    jitterFactor: 0.2
-        synthesizer-prompt: "Enterprise result: {managerDecision} | {workerResults}"
+        type: graph
+        chain:
+          # Manager node
+          - nodeId: "manager"
+            prompt: "Coordinate enterprise workflow for: {input}"
+          # Worker nodes (depend on manager)
+          - nodeId: "validation_worker"
+            dependsOn: ["manager"]
+            prompt: "Validation Worker - Manager decision: {manager} - Validate enterprise request: {input}"
+            retry:
+              strategy: FIXED_DELAY
+              maxAttempts: 2
+              initialDelay: 500
+          - nodeId: "processing_worker"
+            dependsOn: ["manager"]
+            tool: "enterpriseService"
+            retry:
+              strategy: EXPONENTIAL_JITTER
+              maxAttempts: 7
+              initialDelay: 1000
+              jitterFactor: 0.2
+          # Synthesizer node (depends on all workers)
+          - nodeId: "synthesizer"
+            dependsOn: ["validation_worker", "processing_worker"]
+            prompt: "Enterprise result: {manager} | Validation: {validation_worker}, Processing: {processing_worker}"
 
 # =============================================================================
 # Example 6: Different Retry Strategies Showcase
@@ -215,83 +267,63 @@ app:
       model: openai
       system-prompt: "You demonstrate different retry strategies."
       workflow:
-        type: parallel
-        tasks:
-          # No retry strategy
-          - name: noRetryTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Fast fail operation: {input}"
-                  retry:
-                    strategy: NONE
-                    maxAttempts: 1
+        type: graph
+        chain:
+          # Parallel tasks (no dependencies between them)
+          - nodeId: "no_retry_task"
+            prompt: "Fast fail operation: {input}"
+            retry:
+              strategy: NONE
+              maxAttempts: 1
           
-          # Fixed delay strategy
-          - name: fixedDelayTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Fixed delay operation: {input}"
-                  retry:
-                    strategy: FIXED_DELAY
-                    maxAttempts: 3
-                    initialDelay: 2000
+          - nodeId: "fixed_delay_task"
+            prompt: "Fixed delay operation: {input}"
+            retry:
+              strategy: FIXED_DELAY
+              maxAttempts: 3
+              initialDelay: 2000
           
-          # Linear backoff strategy
-          - name: linearTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Linear backoff operation: {input}"
-                  retry:
-                    strategy: LINEAR
-                    maxAttempts: 4
-                    initialDelay: 1000
-                    increment: 1000
+          - nodeId: "linear_task"
+            prompt: "Linear backoff operation: {input}"
+            retry:
+              strategy: LINEAR
+              maxAttempts: 4
+              initialDelay: 1000
+              increment: 1000
           
-          # Exponential backoff strategy
-          - name: exponentialTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Exponential backoff operation: {input}"
-                  retry:
-                    strategy: EXPONENTIAL
-                    maxAttempts: 5
-                    initialDelay: 500
-                    maxDelay: 16000
-                    multiplier: 2.0
+          - nodeId: "exponential_task"
+            prompt: "Exponential backoff operation: {input}"
+            retry:
+              strategy: EXPONENTIAL
+              maxAttempts: 5
+              initialDelay: 500
+              maxDelay: 16000
+              multiplier: 2.0
           
-          # Exponential with jitter strategy
-          - name: jitterTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Jitter backoff operation: {input}"
-                  retry:
-                    strategy: EXPONENTIAL_JITTER
-                    maxAttempts: 5
-                    initialDelay: 1000
-                    maxDelay: 30000
-                    multiplier: 2.0
-                    jitterFactor: 0.25
+          - nodeId: "jitter_task"
+            prompt: "Jitter backoff operation: {input}"
+            retry:
+              strategy: EXPONENTIAL_JITTER
+              maxAttempts: 5
+              initialDelay: 1000
+              maxDelay: 30000
+              multiplier: 2.0
+              jitterFactor: 0.25
           
-          # Custom strategy
-          - name: customTask
-            workflow:
-              type: chain
-              chain:
-                - prompt: "Custom strategy operation: {input}"
-                  retry:
-                    strategy: CUSTOM
-                    maxAttempts: 3
-                    customProperties:
-                      algorithm: "business-specific"
-                      backoffType: "adaptive"
-                      contextAware: true
-        
-        aggregator: "Strategy showcase results: {results}"
+          - nodeId: "custom_task"
+            prompt: "Custom strategy operation: {input}"
+            retry:
+              strategy: CUSTOM
+              maxAttempts: 3
+              customProperties:
+                algorithm: "business-specific"
+                backoffType: "adaptive"
+                contextAware: true
+          
+          # Aggregator depends on all parallel tasks
+          - nodeId: "aggregator"
+            dependsOn: ["no_retry_task", "fixed_delay_task", "linear_task", "exponential_task", "jitter_task", "custom_task"]
+            prompt: "Strategy showcase results: No Retry: {no_retry_task}, Fixed Delay: {fixed_delay_task}, Linear: {linear_task}, Exponential: {exponential_task}, Jitter: {jitter_task}, Custom: {custom_task}"
 
 # =============================================================================
 # Example 7: High-Availability Configuration
@@ -316,21 +348,26 @@ app:
           - "SocketTimeoutException"
           - "ServiceUnavailableException"
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "High-availability processing: {input}"
+          - nodeId: "high_availability_processing"
+            prompt: "High-availability processing: {input}"
             retry:
               strategy: EXPONENTIAL_JITTER
               maxAttempts: 15
               initialDelay: 50
               jitterFactor: 0.4
-          - tool: "primaryService"
+          - nodeId: "primary_service_call"
+            dependsOn: ["high_availability_processing"]
+            tool: "primaryService"
             retry:
               strategy: EXPONENTIAL_JITTER
               maxAttempts: 12
               initialDelay: 200
               jitterFactor: 0.2
-          - tool: "backupService"
+          - nodeId: "backup_service_call"
+            dependsOn: ["primary_service_call"]
+            tool: "backupService"
             retry:
               strategy: EXPONENTIAL
               maxAttempts: 8
@@ -350,14 +387,17 @@ app:
         initialDelay: 100
         enabled: true
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Development test: {input}"
+          - nodeId: "development_test"
+            prompt: "Development test: {input}"
             retry:
               strategy: FIXED_DELAY
               maxAttempts: 1
               initialDelay: 50
-          - tool: "mockService"
+          - nodeId: "mock_service_call"
+            dependsOn: ["development_test"]
+            tool: "mockService"
             retry:
               strategy: NONE
               maxAttempts: 1
