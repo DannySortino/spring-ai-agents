@@ -44,7 +44,86 @@ logging:
     com.springai.agent: DEBUG
     org.springframework.ai: DEBUG
 
-# Application-specific configuration
-# Add your agents here or load them from external configuration
-app:
-  agents: []
+# Visualization Features Configuration
+visualization:
+  # Enable graph structure visualization
+  graphStructure: true
+  
+  # Enable real-time execution status tracking
+  realTimeStatus: true
+  
+  # Enable interactive graph creation web interface
+  interactiveCreator: true
+  
+  # Visualization configuration
+  basePath: "/visualization"
+  websocketEndpoint: "/ws/status"
+
+# Agents Configuration - Top-level for clean binding
+# 
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node' in their workflows:
+# - input_node: Defines where the agent receives inbound messages from agentService.invoke()
+# - output_node: Defines what the agent returns as the final result
+# These nodes are required for proper workflow execution and validation.
+agents:
+  list:
+    # Simple example agent for visualization demo
+    - name: "demo-processor"
+      systemPrompt: "You are a data processing expert. Analyze data step by step."
+      workflow:
+        type: graph
+        chain:
+          # REQUIRED: input_node - Entry point for user requests
+          - nodeId: "input_node"
+            prompt: "Receive and prepare input for processing: {input}"
+            
+          - nodeId: "extract"
+            dependsOn: ["input_node"]
+            prompt: "Extract key information from: {input_node}"
+            
+          - nodeId: "analyze"
+            dependsOn: ["extract"]
+            prompt: "Analyze the extracted data: {extract}"
+            
+          - nodeId: "summarize"
+            dependsOn: ["analyze"]
+            prompt: "Create a summary based on analysis: {analyze}"
+            
+          # REQUIRED: output_node - Final result returned to user
+          - nodeId: "output_node"
+            dependsOn: ["summarize"]
+            prompt: "Format final output: {summarize}"
+
+    # Parallel processing example
+    - name: "research-agent"
+      systemPrompt: "You are a research assistant conducting comprehensive analysis."
+      workflow:
+        type: graph
+        chain:
+          # REQUIRED: input_node - Entry point for user requests
+          - nodeId: "input_node"
+            prompt: "Receive and categorize research request: {input}"
+            
+          - nodeId: "initial_research"
+            dependsOn: ["input_node"]
+            prompt: "Conduct initial research on: {input_node}"
+            
+          - nodeId: "technical_analysis"
+            dependsOn: ["initial_research"]
+            prompt: "Perform technical analysis: {initial_research}"
+            
+          - nodeId: "market_analysis"
+            dependsOn: ["initial_research"]
+            prompt: "Perform market analysis: {initial_research}"
+            
+          - nodeId: "final_report"
+            dependsOn: ["technical_analysis", "market_analysis"]
+            prompt: |
+              Generate comprehensive report:
+              Technical: {technical_analysis}
+              Market: {market_analysis}
+              
+          # REQUIRED: output_node - Final result returned to user
+          - nodeId: "output_node"
+            dependsOn: ["final_report"]
+            prompt: "Present final research report: {final_report}"

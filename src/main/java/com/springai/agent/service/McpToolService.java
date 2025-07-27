@@ -12,14 +12,14 @@ import java.util.Map;
 
 /**
  * Service for managing and executing Model Context Protocol (MCP) tools.
- * 
+ * <p> 
  * This service provides functionality for:
  * - Calling MCP tools on external servers with retry logic
  * - Discovering available tools from registered MCP servers
  * - Processing tool inputs with context variable substitution
  * - Managing tool schemas and parameter extraction
  * - Fallback execution for tools not found on external servers
- * 
+ * <p> 
  * The service integrates with external MCP servers and provides a unified
  * interface for tool execution with built-in error handling and retry mechanisms.
  * 
@@ -181,7 +181,7 @@ public class McpToolService {
                 String formattedInput = chatModel.call(llmPrompt).getResult().getOutput().getText();
                 
                 log.debug("LLM formatted input for tool '{}': {}", toolName, formattedInput);
-                return formattedInput.trim();
+                return formattedInput != null ? formattedInput.trim() : null;
                 
             } else {
                 log.debug("No schema found for tool '{}', using basic context replacement", toolName);

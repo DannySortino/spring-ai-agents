@@ -1,5 +1,10 @@
 # Context Management Examples
 # This file demonstrates various context management configurations for GraphWorkflow steps
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 # Example 1: Default behavior - Keep all context (no context management configuration)
 agents:
@@ -8,12 +13,23 @@ agents:
     workflow:
       type: graph
       chain:
+        # REQUIRED: input_node - receives user input
+        - nodeId: "input_node"
+          prompt: "Receive user request: {input}"
+          
         - nodeId: "analyze"
-          prompt: "Step 1: Analyze the input: {input}"
+          dependsOn: ["input_node"]
+          prompt: "Step 1: Analyze the input: {input_node}"
+          
         - nodeId: "recommend"
           dependsOn: ["analyze"]
           prompt: "Step 2: Based on previous analysis ({analyze}), provide recommendations"
-        # No contextManagement specified = keep all context (default)
+          # No contextManagement specified = keep all context (default)
+          
+        # REQUIRED: output_node - returns final result
+        - nodeId: "output_node"
+          dependsOn: ["recommend"]
+          prompt: "Present final recommendations: {recommend}"
 
 ---
 
@@ -24,8 +40,14 @@ agents:
     workflow:
       type: graph
       chain:
+        # REQUIRED: input_node - receives user input
+        - nodeId: "input_node"
+          prompt: "Receive user request: {input}"
+          
         - nodeId: "collect_info"
-          prompt: "Step 1: Collect user information: {input}"
+          dependsOn: ["input_node"]
+          prompt: "Step 1: Collect user information: {input_node}"
+          
         - nodeId: "secure_process"
           dependsOn: ["collect_info"]
           prompt: "Step 2: Process data securely"
@@ -35,9 +57,15 @@ agents:
               - "systemPrompt"
               - "agentName"
               - "isFirstInvocation"
+              
         - nodeId: "final_response"
           dependsOn: ["secure_process"]
           prompt: "Step 3: Provide final response"
+          
+        # REQUIRED: output_node - returns final result
+        - nodeId: "output_node"
+          dependsOn: ["final_response"]
+          prompt: "Present secure response: {final_response}"
 
 ---
 

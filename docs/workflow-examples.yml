@@ -3,23 +3,41 @@
 # =============================================================================
 # This file contains comprehensive examples of all supported workflow types
 # and configuration options for the Spring AI Agent Platform.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 # =============================================================================
-# 1. CHAIN WORKFLOW EXAMPLES
+# 1. GRAPH WORKFLOW EXAMPLES (RECOMMENDED)
 # =============================================================================
-# Chain workflows execute steps sequentially, passing output from one step to the next
+# Graph workflows support complex dependencies, parallel processing, and all advanced features
 
-# Simple Chain Workflow - Basic sequential processing
-app:
-  agents:
-    - name: simpleChainAgent
-      model: openai
-      system-prompt: "You are a helpful assistant that processes requests step by step."
+# Simple Sequential Processing - Basic linear workflow
+agents:
+  list:
+    - name: simpleSequentialAgent
+      systemPrompt: "You are a helpful assistant that processes requests step by step."
       workflow:
-        type: chain
+        type: graph
         chain:
-          - prompt: "Analyze the request: {input}"
-          - prompt: "Provide a detailed response based on the analysis"
+          # REQUIRED: input_node - receives user input
+          - nodeId: "input_node"
+            prompt: "Receive user request: {input}"
+            
+          - nodeId: "analyze"
+            dependsOn: ["input_node"]
+            prompt: "Analyze the request: {input_node}"
+            
+          - nodeId: "respond"
+            dependsOn: ["analyze"]
+            prompt: "Provide a detailed response based on the analysis: {analyze}"
+            
+          # REQUIRED: output_node - returns final result
+          - nodeId: "output_node"
+            dependsOn: ["respond"]
+            prompt: "Present final response: {respond}"
 
 ---
 

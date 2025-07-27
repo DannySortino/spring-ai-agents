@@ -5,10 +5,14 @@
 # - Orchestrator patterns (manager-worker-synthesizer)
 # - Routing patterns (content-based routing)
 # - Complex combinations of all patterns
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
-spring:
-  ai:
-    agents:
+agents:
+  list:
       - name: "data-analysis-agent"
         systemPrompt: "You are a data analysis expert. Process requests step by step with proper dependencies."
         workflow:

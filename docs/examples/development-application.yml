@@ -49,28 +49,44 @@ logging:
     root: INFO
 
 # Development-focused agent configurations
-app:
-  agents:
+# 
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
+agents:
+  list:
     # Development testing agent with tool integration
     - name: devTestAgent
-      model: openai
-      system-prompt: "You are a development testing assistant with access to various tools."
+      systemPrompt: "You are a development testing assistant with access to various tools."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive development request: {input}"
+            
           - nodeId: "analyze_request"
-            prompt: "Analyzing development request: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Analyzing development request: {input_node}"
+            
           - nodeId: "data_tool_call"
             dependsOn: ["analyze_request"]
             tool: "dataTool"
+            
           - nodeId: "process_results"
             dependsOn: ["data_tool_call"]
             prompt: "Processing tool results and providing development insights"
-      mcp-server:
+            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["process_results"]
+            prompt: "Present development analysis results: {process_results}"
+      mcpServer:
         enabled: true
         port: 8083
         description: "Development testing agent MCP server"
-        base-url: "/api/agents/devTestAgent/mcp"
+        baseUrl: "/api/agents/devTestAgent/mcp"
 
     # Parallel processing agent for testing concurrent workflows
     - name: parallelTestAgent

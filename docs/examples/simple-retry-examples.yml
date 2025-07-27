@@ -3,6 +3,11 @@
 # =============================================================================
 # This file provides simple, easy-to-understand retry configuration examples
 # for common use cases. Perfect for getting started with retry functionality.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:

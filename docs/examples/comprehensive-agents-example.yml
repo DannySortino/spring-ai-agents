@@ -37,49 +37,78 @@ logging:
     org.springframework.ai: DEBUG
 
 # Comprehensive agent examples demonstrating various patterns
-app:
-  agents:
+# 
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
+agents:
+  list:
     # Simple conversational agent with basic graph workflow
     - name: simpleAgent
-      model: openai
       systemPrompt: "You are a helpful assistant."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user input
+          - nodeId: "input_node"
+            prompt: "Receive user question: {input}"
+            
           - nodeId: "response"
-            prompt: "Answer the question: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Answer the question: {input_node}"
+            
+          # REQUIRED: output_node - returns final answer
+          - nodeId: "output_node"
+            dependsOn: ["response"]
+            prompt: "Present final answer: {response}"
       mcpServer:
         enabled: true
         description: "Simple assistant agent MCP server"
 
     # Tool-calling agent demonstrating sequential tool integration
     - name: toolCallingAgent
-      model: openai
       systemPrompt: "You are a billing specialist with access to various tools."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive billing request: {input}"
+            
           - nodeId: "analyze"
-            prompt: "Analyzing billing request: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Analyzing billing request: {input_node}"
+            
           - nodeId: "tool_call"
             dependsOn: ["analyze"]
             tool: "invoiceTool"
+            
           - nodeId: "response"
             dependsOn: ["tool_call"]
             prompt: "Based on the tool result: {tool_call}, provide a comprehensive response"
+            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["response"]
+            prompt: "Present final billing response: {response}"
 
     # Routing agent demonstrating content-based request routing using GraphWorkflow conditionals
     - name: billingAgent
-      model: openai
       systemPrompt: "You are a billing expert. Handle all billing requests with precision and care."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize billing request: {input}"
+            
           - nodeId: "billing_router"
+            dependsOn: ["input_node"]
             conditional:
               condition:
                 type: CONTAINS
-                field: "input"
+                field: "input_node"
                 value: "invoice"
                 ignoreCase: true
               thenStep:
@@ -89,7 +118,7 @@ app:
                 conditional:
                   condition:
                     type: CONTAINS
-                    field: "input"
+                    field: "input_node"
                     value: "dispute"
                     ignoreCase: true
                   thenStep:
@@ -99,14 +128,19 @@ app:
                     conditional:
                       condition:
                         type: CONTAINS
-                        field: "input"
+                        field: "input_node"
                         value: "payment"
                         ignoreCase: true
                       thenStep:
                         prompt: "Process payment for {amount} using {paymentMethod}. Ensure all security protocols are followed."
                         tool: paymentTool
                       elseStep:
-                        prompt: "General billing assistance: {input}. Please specify if you need help with invoices, disputes, or payments."
+                        prompt: "General billing assistance: {input_node}. Please specify if you need help with invoices, disputes, or payments."
+                        
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["billing_router"]
+            prompt: "Present final billing response: {billing_router}"
       mcpServer:
         enabled: true
         description: "Billing expert agent MCP server with conditional routing capabilities"

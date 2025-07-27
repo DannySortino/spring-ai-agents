@@ -1,6 +1,5 @@
 package com.springai.agent.config;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.springai.agent.config.AppProperties.AgentDef;
 import com.springai.agent.service.AgentService;

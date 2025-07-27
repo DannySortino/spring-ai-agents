@@ -3,8 +3,8 @@ package com.springai.agent.workflow;
 import com.springai.agent.config.AppProperties.WorkflowStepDef;
 import com.springai.agent.config.AppProperties.ConditionalStepDef;
 import com.springai.agent.config.AppProperties.ConditionDef;
-import com.springai.agent.config.ConditionType;
 import com.springai.agent.service.McpToolService;
+import com.springai.agent.service.ExecutionStatusService;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -14,25 +14,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Workflow implementation that executes steps based on dependency relationships between nodes.
- * 
+ * <p>
  * This workflow treats each step as a node in a directed acyclic graph (DAG), where edges
  * represent data dependencies between nodes. Key features:
- * 
+ * <p>
  * - Graph-based execution with arbitrary dependencies (A→B, B→C, A→C)
  * - Topological sorting to determine execution order
  * - Cycle detection to prevent infinite loops
  * - Parallel execution of independent nodes
  * - Result passing between dependent nodes
  * - Extensible dependency management
- * 
+ * <p>
  * Each node can depend on multiple other nodes, and the results from all dependencies
  * are passed to the LLM call for that node. This enables complex data flow patterns
  * that aren't possible with simple sequential or parallel workflows.
- * 
+ * <p>
  * Example configuration:
  * <pre>
  * workflow:
@@ -55,6 +54,7 @@ public class GraphWorkflow implements Workflow {
     private final ChatModel chatModel;
     private final List<WorkflowStepDef> steps;
     private final McpToolService mcpToolService;
+    private final ExecutionStatusService executionStatusService;
     private final ExecutorService executorService;
     
     // Graph representation
@@ -63,9 +63,14 @@ public class GraphWorkflow implements Workflow {
     private final Map<String, Set<String>> dependencyMap;
     
     public GraphWorkflow(ChatModel chatModel, List<WorkflowStepDef> steps, McpToolService mcpToolService) {
+        this(chatModel, steps, mcpToolService, null);
+    }
+    
+    public GraphWorkflow(ChatModel chatModel, List<WorkflowStepDef> steps, McpToolService mcpToolService, ExecutionStatusService executionStatusService) {
         this.chatModel = chatModel;
         this.steps = steps != null ? steps : List.of();
         this.mcpToolService = mcpToolService;
+        this.executionStatusService = executionStatusService;
         this.executorService = Executors.newCachedThreadPool();
         
         // Build graph structures
@@ -126,6 +131,22 @@ public class GraphWorkflow implements Workflow {
     private void validateGraph() {
         if (hasCycle()) {
             throw new IllegalArgumentException("Workflow graph contains cycles - this would create infinite loops");
+        }
+        
+        // Validate that required input and output nodes are present
+        validateRequiredNodes();
+    }
+    
+    /**
+     * Validate that the graph contains required input_node and output_node
+     */
+    private void validateRequiredNodes() {
+        if (!nodeMap.containsKey("input_node")) {
+            throw new IllegalArgumentException("Workflow graph must contain an 'input_node' - this defines where the agent receives inbound messages");
+        }
+        
+        if (!nodeMap.containsKey("output_node")) {
+            throw new IllegalArgumentException("Workflow graph must contain an 'output_node' - this defines what the agent returns at the end");
         }
     }
     
@@ -219,37 +240,58 @@ public class GraphWorkflow implements Workflow {
         // Get execution order through topological sort
         List<String> executionOrder = topologicalSort();
         
+        // Start execution tracking if service is available
+        final String executionId;
+        String agentName = (String) context.get("agentName");
+        if (executionStatusService != null && agentName != null) {
+            executionId = executionStatusService.startExecution(agentName, executionOrder);
+        } else {
+            executionId = null;
+        }
+        
         // Store results for each node
         Map<String, String> nodeResults = new ConcurrentHashMap<>();
         
         // Group nodes by their dependency level for parallel execution
         Map<Integer, List<String>> levelGroups = groupNodesByLevel(executionOrder);
         
-        // Execute nodes level by level
-        for (Map.Entry<Integer, List<String>> levelEntry : levelGroups.entrySet()) {
-            List<String> nodesAtLevel = levelEntry.getValue();
-            
-            if (nodesAtLevel.size() == 1) {
-                // Single node - execute directly
-                String nodeId = nodesAtLevel.get(0);
-                String result = executeNode(nodeId, input, context, nodeResults);
-                nodeResults.put(nodeId, result);
-            } else {
-                // Multiple nodes - execute in parallel
-                List<CompletableFuture<Void>> futures = nodesAtLevel.stream()
-                    .map(nodeId -> CompletableFuture.runAsync(() -> {
-                        String result = executeNode(nodeId, input, context, nodeResults);
-                        nodeResults.put(nodeId, result);
-                    }, executorService))
-                    .collect(Collectors.toList());
+        boolean executionSuccess = true;
+
+        try {
+            // Execute nodes level by level
+            for (Map.Entry<Integer, List<String>> levelEntry : levelGroups.entrySet()) {
+                List<String> nodesAtLevel = levelEntry.getValue();
                 
-                // Wait for all nodes at this level to complete
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                if (nodesAtLevel.size() == 1) {
+                    // Single node - execute directly
+                    String nodeId = nodesAtLevel.getFirst();
+                    String result = executeNodeWithTracking(nodeId, input, context, nodeResults, executionId);
+                    nodeResults.put(nodeId, result);
+                } else {
+                    // Multiple nodes - execute in parallel
+                    List<CompletableFuture<Void>> futures = nodesAtLevel.stream()
+                        .map(nodeId -> CompletableFuture.runAsync(() -> {
+                            String result = executeNodeWithTracking(nodeId, input, context, nodeResults, executionId);
+                            nodeResults.put(nodeId, result);
+                        }, executorService))
+                        .toList();
+                    
+                    // Wait for all nodes at this level to complete
+                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                }
+            }
+        } catch (Exception e) {
+            executionSuccess = false;
+            throw e;
+        } finally {
+            // Complete execution tracking
+            if (executionStatusService != null && executionId != null) {
+                executionStatusService.completeExecution(executionId, executionSuccess);
             }
         }
         
         // Return the result from the last executed node
-        String lastNodeId = executionOrder.get(executionOrder.size() - 1);
+        String lastNodeId = executionOrder.getLast();
         return nodeResults.get(lastNodeId);
     }
     
@@ -276,6 +318,43 @@ public class GraphWorkflow implements Workflow {
     }
     
     /**
+     * Execute a single node with status tracking
+     */
+    private String executeNodeWithTracking(String nodeId, String originalInput, Map<String, Object> context, 
+                                          Map<String, String> nodeResults, String executionId) {
+        long startTime = System.currentTimeMillis();
+        
+        // Update status to RUNNING
+        if (executionStatusService != null && executionId != null) {
+            executionStatusService.updateNodeStatus(executionId, nodeId, 
+                ExecutionStatusService.NodeState.RUNNING, null, null, null);
+        }
+        
+        try {
+            String result = executeNode(nodeId, originalInput, context, nodeResults);
+            long duration = System.currentTimeMillis() - startTime;
+            
+            // Update status to COMPLETED
+            if (executionStatusService != null && executionId != null) {
+                executionStatusService.updateNodeStatus(executionId, nodeId, 
+                    ExecutionStatusService.NodeState.COMPLETED, result, null, duration);
+            }
+            
+            return result;
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            
+            // Update status to FAILED
+            if (executionStatusService != null && executionId != null) {
+                executionStatusService.updateNodeStatus(executionId, nodeId, 
+                    ExecutionStatusService.NodeState.FAILED, null, e.getMessage(), duration);
+            }
+            
+            throw e;
+        }
+    }
+    
+    /**
      * Execute a single node with its dependencies
      */
     private String executeNode(String nodeId, String originalInput, Map<String, Object> context, Map<String, String> nodeResults) {
@@ -285,7 +364,7 @@ public class GraphWorkflow implements Workflow {
         applyContextManagementBefore(step, context);
         
         // Prepare input for this node
-        String nodeInput = prepareNodeInput(nodeId, originalInput, context, nodeResults);
+        String nodeInput = prepareNodeInput(nodeId, originalInput, nodeResults);
         
         String result;
         if (step.getConditional() != null) {
@@ -338,13 +417,20 @@ public class GraphWorkflow implements Workflow {
     
     /**
      * Prepare input for a node based on its dependencies
+     * Only input_node receives the original user input - all other nodes receive dependency results
      */
-    private String prepareNodeInput(String nodeId, String originalInput, Map<String, Object> context, Map<String, String> nodeResults) {
+    private String prepareNodeInput(String nodeId, String originalInput, Map<String, String> nodeResults) {
+        // Special case: input_node always receives the original user input
+        // This ensures agentService.invoke() effectively acts as the INPUT_NODE
+        if ("input_node".equals(nodeId)) {
+            return originalInput;
+        }
+        
         Set<String> dependencies = dependencyMap.get(nodeId);
         
         if (dependencies.isEmpty()) {
-            // Root node - use original input
-            return originalInput;
+            // Non-input root node - return empty string since it shouldn't receive original input
+            return "";
         } else if (dependencies.size() == 1) {
             // Single dependency - use its result
             String dependency = dependencies.iterator().next();
@@ -353,7 +439,7 @@ public class GraphWorkflow implements Workflow {
             // Multiple dependencies - combine results
             StringBuilder combined = new StringBuilder();
             for (String dependency : dependencies) {
-                if (combined.length() > 0) {
+                if (!combined.isEmpty()) {
                     combined.append("\n\n");
                 }
                 combined.append("Result from ").append(dependency).append(": ").append(nodeResults.get(dependency));
@@ -408,8 +494,15 @@ public class GraphWorkflow implements Workflow {
      * Apply context management after step execution
      */
     private void applyContextManagementAfter(WorkflowStepDef step, Map<String, Object> context) {
-        if (step.getContextManagement() != null && step.getContextManagement().isClearAfter()) {
-            clearContextWithPreservation(context, step.getContextManagement().getPreserveKeys());
+        if (step.getContextManagement() != null) {
+            // If removeKeys is specified, it takes precedence over clearAfter
+            if (step.getContextManagement().getRemoveKeys() != null) {
+                for (String key : step.getContextManagement().getRemoveKeys()) {
+                    context.remove(key);
+                }
+            } else if (step.getContextManagement().isClearAfter()) {
+                clearContextWithPreservation(context, step.getContextManagement().getPreserveKeys());
+            }
         }
     }
     
@@ -471,10 +564,10 @@ public class GraphWorkflow implements Workflow {
                 }
                 
             case EXISTS:
-                return fieldValue != null && !fieldValue.trim().isEmpty();
+                return !fieldValue.trim().isEmpty();
                 
             case EMPTY:
-                return fieldValue == null || fieldValue.trim().isEmpty();
+                return fieldValue.trim().isEmpty();
                 
             default:
                 return false;

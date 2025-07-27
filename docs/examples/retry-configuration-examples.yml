@@ -3,6 +3,11 @@
 # =============================================================================
 # This file demonstrates various retry configuration patterns and strategies
 # for different use cases and scenarios in the Spring AI Agent Platform.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:
@@ -15,32 +20,44 @@ spring:
 # Example 1: Basic Retry Configuration
 # =============================================================================
 # Simple retry setup with default exponential backoff
-app:
-  # Application-wide default retry configuration
-  defaultRetry:
-    strategy: EXPONENTIAL
-    maxAttempts: 3
-    initialDelay: 1000
-    maxDelay: 10000
-    multiplier: 2.0
-    enabled: true
 
-  agents:
+# Application-wide default retry configuration
+defaultRetry:
+  strategy: EXPONENTIAL
+  maxAttempts: 3
+  initialDelay: 1000
+  maxDelay: 10000
+  multiplier: 2.0
+  enabled: true
+
+agents:
+  list:
     # Basic agent with default retry behavior
     - name: basicRetryAgent
-      model: openai
-      system-prompt: "You are a basic agent with retry capabilities."
+      systemPrompt: "You are a basic agent with retry capabilities."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive user request: {input}"
+            
           - nodeId: "process_request"
-            prompt: "Process request: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Process request: {input_node}"
+            
           - nodeId: "external_api_call"
             dependsOn: ["process_request"]
             tool: "externalAPI"  # This will use default retry
+            
           - nodeId: "provide_response"
             dependsOn: ["external_api_call"]
-            prompt: "Provide response based on results"
+            prompt: "Provide response based on results: {external_api_call}"
+            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["provide_response"]
+            prompt: "Present final response: {provide_response}"
 
 # =============================================================================
 # Example 2: Agent-Level Retry Override

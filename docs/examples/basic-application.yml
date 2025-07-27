@@ -24,55 +24,88 @@ logging:
     org.springframework.ai: INFO
 
 # Simple agent configurations
-app:
-  agents:
+# 
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
+agents:
+  list:
     # Basic conversational agent
     - name: chatAgent
-      model: openai
-      system-prompt: "You are a helpful and friendly assistant."
+      systemPrompt: "You are a helpful and friendly assistant."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user input
+          - nodeId: "input_node"
+            prompt: "Receive user message: {input}"
+            
           - nodeId: "response"
-            prompt: "Respond to: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Respond to: {input_node}"
+            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["response"]
+            prompt: "Format response: {response}"
 
     # Simple task-oriented agent
     - name: taskAgent
-      model: openai
-      system-prompt: "You are a task-oriented assistant that helps with specific requests."
+      systemPrompt: "You are a task-oriented assistant that helps with specific requests."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user task
+          - nodeId: "input_node"
+            prompt: "Receive task request: {input}"
+            
           - nodeId: "analyze"
-            prompt: "Analyze the task: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Analyze the task: {input_node}"
+            
           - nodeId: "instructions"
             dependsOn: ["analyze"]
             prompt: "Provide step-by-step instructions to complete the task: {analyze}"
+            
+          # REQUIRED: output_node - returns final instructions
+          - nodeId: "output_node"
+            dependsOn: ["instructions"]
+            prompt: "Present final instructions: {instructions}"
 
     # Basic routing agent using GraphWorkflow conditionals for different types of requests
     - name: routingAgent
-      model: openai
-      system-prompt: "You are a smart assistant that handles different types of requests."
+      systemPrompt: "You are a smart assistant that handles different types of requests."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize request: {input}"
+            
           - nodeId: "request_router"
+            dependsOn: ["input_node"]
             conditional:
               condition:
                 type: CONTAINS
-                field: "input"
+                field: "input_node"
                 value: "question"
                 ignoreCase: true
               thenStep:
-                prompt: "Answer the question: {input}"
+                prompt: "Answer the question: {input_node}"
               elseStep:
                 conditional:
                   condition:
                     type: CONTAINS
-                    field: "input"
+                    field: "input_node"
                     value: "task"
                     ignoreCase: true
                   thenStep:
-                    prompt: "Help with the task: {input}"
+                    prompt: "Help with the task: {input_node}"
                   elseStep:
-                    prompt: "Provide general assistance for: {input}"
+                    prompt: "Provide general assistance for: {input_node}"
+                    
+          # REQUIRED: output_node - returns routed response
+          - nodeId: "output_node"
+            dependsOn: ["request_router"]
+            prompt: "Present final response: {request_router}"

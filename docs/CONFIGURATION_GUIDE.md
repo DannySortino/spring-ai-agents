@@ -35,16 +35,24 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY}
 
-app:
-  agents:
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node'
+agents:
+  list:
     - name: simpleAgent
-      model: openai
-      system-prompt: "You are a helpful assistant."
+      systemPrompt: "You are a helpful assistant."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - entry point for user requests
+          - nodeId: "input_node"
+            prompt: "Receive user request: {input}"
           - nodeId: "response"
-            prompt: "Respond to: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Respond to: {input_node}"
+          # REQUIRED: output_node - final result returned to user
+          - nodeId: "output_node"
+            dependsOn: ["response"]
+            prompt: "Present response: {response}"
 ```
 
 ### Configuration Structure

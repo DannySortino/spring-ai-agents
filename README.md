@@ -65,6 +65,7 @@ The Spring AI Agent Platform is built around a **unified graph-based workflow sy
 
 ### Configuration Guides
 - **[Configuration Guide](docs/CONFIGURATION_GUIDE.md)** - Comprehensive configuration reference
+- **[Input/Output Node Requirements](docs/INPUT_OUTPUT_NODE_REQUIREMENTS.md)** - **REQUIRED**: New mandatory workflow structure
 - **[MCP Client Setup](docs/MCP_CLIENT_SETUP_GUIDE.md)** - Model Context Protocol integration
 - **[MCP Troubleshooting](docs/MCP_TROUBLESHOOTING_GUIDE.md)** - Common MCP issues and solutions
 
@@ -88,16 +89,25 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY}
 
-app:
-  agents:
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node'
+# See docs/INPUT_OUTPUT_NODE_REQUIREMENTS.md for details
+agents:
+  list:
     - name: myAgent
-      model: openai
-      system-prompt: "You are a helpful assistant."
+      systemPrompt: "You are a helpful assistant."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - entry point for user requests
+          - nodeId: "input_node"
+            prompt: "Receive user request: {input}"
           - nodeId: "response"
-            prompt: "Respond to: {input}"
+            dependsOn: ["input_node"]
+            prompt: "Respond to: {input_node}"
+          # REQUIRED: output_node - final result returned to user
+          - nodeId: "output_node"
+            dependsOn: ["response"]
+            prompt: "Present response: {response}"
 ```
 
 ### Advanced Graph Workflow Examples

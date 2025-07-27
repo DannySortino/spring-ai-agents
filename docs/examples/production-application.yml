@@ -3,6 +3,11 @@
 # =============================================================================
 # This configuration is optimized for production environments with enterprise
 # features, security, performance optimization, and robust error handling.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:
@@ -85,29 +90,33 @@ management:
         enabled: true
 
 # Production agent configurations
-app:
-  agents:
+agents:
+  list:
     # Enterprise billing agent with comprehensive workflow
     - name: enterpriseBillingAgent
-      model: openai
-      system-prompt: |
+      systemPrompt: |
         You are an enterprise-grade billing specialist with advanced capabilities.
         Handle complex billing scenarios, enterprise contracts, and multi-currency transactions.
         Ensure compliance with international financial regulations and maintain audit trails.
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize enterprise billing request: {input}"
+            
           # Manager node
           - nodeId: "manager"
+            dependsOn: ["input_node"]
             prompt: |
-              Enterprise billing request analysis: {input}
+              Enterprise billing request analysis: {input_node}
               
               Evaluate complexity, compliance requirements, and processing priority.
               Determine optimal worker assignment for maximum efficiency and accuracy.
           # Worker nodes (depend on manager)
           - nodeId: "compliance_worker"
             dependsOn: ["manager"]
-            prompt: "Compliance Worker - Manager decision: {manager} - Review compliance requirements for: {input}"
+            prompt: "Compliance Worker - Manager decision: {manager} - Review compliance requirements for: {input_node}"
           - nodeId: "compliance_tool_call"
             dependsOn: ["compliance_worker"]
             tool: "complianceTool"
@@ -116,7 +125,7 @@ app:
             prompt: "Validate against current regulations and generate compliance report"
           - nodeId: "calculation_worker"
             dependsOn: ["manager"]
-            prompt: "Calculation Worker - Manager decision: {manager} - Perform detailed billing calculations for: {input}"
+            prompt: "Calculation Worker - Manager decision: {manager} - Perform detailed billing calculations for: {input_node}"
           - nodeId: "billing_tool_call"
             dependsOn: ["calculation_worker"]
             tool: "billingCalculatorTool"
@@ -125,7 +134,7 @@ app:
             prompt: "Apply taxes, discounts, and currency conversions with audit trail"
           - nodeId: "audit_worker"
             dependsOn: ["manager"]
-            prompt: "Audit Worker - Manager decision: {manager} - Audit the billing process for: {input}"
+            prompt: "Audit Worker - Manager decision: {manager} - Audit the billing process for: {input_node}"
           - nodeId: "audit_tool_call"
             dependsOn: ["audit_worker"]
             tool: "auditTool"
@@ -147,6 +156,11 @@ app:
               3. Detailed Calculations
               4. Audit Trail
               5. Risk Assessment
+              
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["synthesizer"]
+            prompt: "Present final enterprise billing response: {synthesizer}"
 
     # Production analytics agent with parallel processing
     - name: productionAnalyticsAgent

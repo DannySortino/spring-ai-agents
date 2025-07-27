@@ -1,6 +1,11 @@
 # Dynamic Route Discovery Examples
 # This file demonstrates how the dynamic route discovery works with any route names
 # The system will automatically discover routes from configuration without hardcoded values
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
 
 spring:
   application:
@@ -10,155 +15,182 @@ spring:
       api-key: ${OPENAI_API_KEY:local-api-key}
       base-url: ${OPENAI_BASE_URL:http://localhost:1234/v1}
 
-app:
-  agents:
+agents:
+  list:
     # Example 1: Standard billing routes (existing functionality)
     - name: standardBillingAgent
-      model: openai
       systemPrompt: "You are a billing specialist."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize billing request: {input}"
+            
           - nodeId: "billing_router"
+            dependsOn: ["input_node"]
             conditional:
               condition:
                 type: CONTAINS
-                field: "input"
+                field: "input_node"
                 value: "invoice"
                 ignoreCase: true
               thenStep:
-                prompt: "Handle invoice request: {input}"
+                prompt: "Handle invoice request: {input_node}"
                 tool: invoiceTool
               elseStep:
                 conditional:
                   condition:
                     type: CONTAINS
-                    field: "input"
+                    field: "input_node"
                     value: "dispute"
                     ignoreCase: true
                   thenStep:
-                    prompt: "Handle dispute request: {input}"
+                    prompt: "Handle dispute request: {input_node}"
                     tool: disputeTool
                   elseStep:
                     conditional:
                       condition:
                         type: CONTAINS
-                        field: "input"
+                        field: "input_node"
                         value: "payment"
                         ignoreCase: true
                       thenStep:
-                        prompt: "Handle payment request: {input}"
+                        prompt: "Handle payment request: {input_node}"
                         tool: paymentTool
                       elseStep:
-                        prompt: "General billing assistance for: {input}"
+                        prompt: "General billing assistance for: {input_node}"
+                        
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["billing_router"]
+            prompt: "Present final billing response: {billing_router}"
 
     # Example 2: Custom route names (demonstrates dynamic discovery)
     - name: customRoutingAgent
-      model: openai
       systemPrompt: "You are a custom routing agent with unique route names."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize custom routing request: {input}"
+            
           - nodeId: "custom_router"
+            dependsOn: ["input_node"]
             conditional:
               condition:
                 type: CONTAINS
-                field: "input"
+                field: "input_node"
                 value: "customer service"
                 ignoreCase: true
               thenStep:
-                prompt: "Provide excellent customer service for: {input}"
+                prompt: "Provide excellent customer service for: {input_node}"
                 tool: customerServiceTool
               elseStep:
                 conditional:
                   condition:
                     type: CONTAINS
-                    field: "input"
+                    field: "input_node"
                     value: "technical support"
                     ignoreCase: true
                   thenStep:
-                    prompt: "Provide technical support for: {input}"
+                    prompt: "Provide technical support for: {input_node}"
                     tool: techSupportTool
                   elseStep:
                     conditional:
                       condition:
                         type: CONTAINS
-                        field: "input"
+                        field: "input_node"
                         value: "sales"
                         ignoreCase: true
                       thenStep:
-                        prompt: "Handle sales inquiry: {input}"
+                        prompt: "Handle sales inquiry: {input_node}"
                         tool: salesTool
                       elseStep:
                         conditional:
                           condition:
                             type: CONTAINS
-                            field: "input"
+                            field: "input_node"
                             value: "product"
                             ignoreCase: true
                           thenStep:
-                            prompt: "Provide product information for: {input}"
+                            prompt: "Provide product information for: {input_node}"
                           elseStep:
-                            prompt: "Provide general assistance: {input}"
+                            prompt: "Provide general assistance: {input_node}"
+                            
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["custom_router"]
+            prompt: "Present final custom routing response: {custom_router}"
 
     # Example 3: E-commerce specific routes
     - name: ecommerceAgent
-      model: openai
       systemPrompt: "You are an e-commerce specialist."
       workflow:
         type: graph
         chain:
+          # REQUIRED: input_node - receives user request
+          - nodeId: "input_node"
+            prompt: "Receive and categorize e-commerce request: {input}"
+            
           - nodeId: "ecommerce_router"
+            dependsOn: ["input_node"]
             conditional:
               condition:
                 type: CONTAINS
-                field: "input"
+                field: "input_node"
                 value: "order"
                 ignoreCase: true
               thenStep:
-                prompt: "Track order status: {input}"
+                prompt: "Track order status: {input_node}"
                 tool: orderTrackingTool
               elseStep:
                 conditional:
                   condition:
                     type: CONTAINS
-                    field: "input"
+                    field: "input_node"
                     value: "return"
                     ignoreCase: true
                   thenStep:
-                    prompt: "Process return request: {input}"
+                    prompt: "Process return request: {input_node}"
                     tool: returnTool
                   elseStep:
                     conditional:
                       condition:
                         type: CONTAINS
-                        field: "input"
+                        field: "input_node"
                         value: "recommend"
                         ignoreCase: true
                       thenStep:
-                        prompt: "Recommend products based on: {input}"
+                        prompt: "Recommend products based on: {input_node}"
                         tool: recommendationTool
                       elseStep:
                         conditional:
                           condition:
                             type: CONTAINS
-                            field: "input"
+                            field: "input_node"
                             value: "inventory"
                             ignoreCase: true
                           thenStep:
-                            prompt: "Check inventory for: {input}"
+                            prompt: "Check inventory for: {input_node}"
                             tool: inventoryTool
                           elseStep:
                             conditional:
                               condition:
                                 type: CONTAINS
-                                field: "input"
+                                field: "input_node"
                                 value: "shipping"
                                 ignoreCase: true
                               thenStep:
-                                prompt: "Provide shipping information: {input}"
+                                prompt: "Provide shipping information: {input_node}"
                               elseStep:
-                                prompt: "General e-commerce assistance for: {input}"
+                                prompt: "General e-commerce assistance for: {input_node}"
+                                
+          # REQUIRED: output_node - returns final response
+          - nodeId: "output_node"
+            dependsOn: ["ecommerce_router"]
+            prompt: "Present final e-commerce response: {ecommerce_router}"
 
     # Example 4: Healthcare specific routes
     - name: healthcareAgent

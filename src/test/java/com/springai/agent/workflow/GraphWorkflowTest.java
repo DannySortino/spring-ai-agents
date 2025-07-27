@@ -20,11 +20,13 @@ class GraphWorkflowTest {
 
     @Test
     void testGraphWorkflowCreation() {
-        // Given: Simple linear graph A -> B -> C
+        // Given: Simple linear graph input_node -> A -> B -> C -> output_node
         List<WorkflowStepDef> steps = Arrays.asList(
-            createStep("A", "Process input: {input}", null),
+            createStep("input_node", "Receive input: {input}", null),
+            createStep("A", "Process input: {input_node}", Arrays.asList("input_node")),
             createStep("B", "Analyze result: {A}", Arrays.asList("A")),
-            createStep("C", "Finalize: {B}", Arrays.asList("B"))
+            createStep("C", "Finalize: {B}", Arrays.asList("B")),
+            createStep("output_node", "Final output: {C}", Arrays.asList("C"))
         );
 
         // When: Create GraphWorkflow
@@ -36,11 +38,13 @@ class GraphWorkflowTest {
 
     @Test
     void testComplexDependencyPattern() {
-        // Given: A -> B, B -> C, A -> C (as specified in the issue)
+        // Given: input_node -> A -> B, B -> C, A -> C -> output_node (as specified in the issue)
         List<WorkflowStepDef> steps = Arrays.asList(
-            createStep("A", "Process A: {input}", null),
+            createStep("input_node", "Receive input: {input}", null),
+            createStep("A", "Process A: {input_node}", Arrays.asList("input_node")),
             createStep("B", "Process B from A: {A}", Arrays.asList("A")),
-            createStep("C", "Process C from A and B: {A} and {B}", Arrays.asList("A", "B"))
+            createStep("C", "Process C from A and B: {A} and {B}", Arrays.asList("A", "B")),
+            createStep("output_node", "Final output: {C}", Arrays.asList("C"))
         );
 
         // When: Create GraphWorkflow
@@ -122,18 +126,20 @@ class GraphWorkflowTest {
 
     @Test
     void testEmptyWorkflow() {
-        // Given: Empty workflow
-        GraphWorkflow workflow = new GraphWorkflow(null, Collections.emptyList(), null);
-        
-        // Then: Workflow should be created successfully
-        assertNotNull(workflow);
+        // Given: Empty workflow (should require at least input_node and output_node)
+        // When/Then: Creating empty GraphWorkflow should throw exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            new GraphWorkflow(null, Collections.emptyList(), null);
+        });
     }
 
     @Test
     void testSingleNodeWorkflow() {
-        // Given: Single node workflow
+        // Given: Single node workflow with required input_node and output_node
         List<WorkflowStepDef> steps = Arrays.asList(
-            createStep("A", "Process: {input}", null)
+            createStep("input_node", "Receive input: {input}", null),
+            createStep("A", "Process: {input_node}", Arrays.asList("input_node")),
+            createStep("output_node", "Final output: {A}", Arrays.asList("A"))
         );
 
         // When: Create GraphWorkflow
@@ -145,12 +151,14 @@ class GraphWorkflowTest {
 
     @Test
     void testDiamondDependencyPattern() {
-        // Given: A -> B, A -> C, B -> D, C -> D (diamond pattern)
+        // Given: input_node -> A -> B, A -> C, B -> D, C -> D -> output_node (diamond pattern)
         List<WorkflowStepDef> steps = Arrays.asList(
-            createStep("A", "Start: {input}", null),
+            createStep("input_node", "Receive input: {input}", null),
+            createStep("A", "Start: {input_node}", Arrays.asList("input_node")),
             createStep("B", "Branch B from A: {A}", Arrays.asList("A")),
             createStep("C", "Branch C from A: {A}", Arrays.asList("A")),
-            createStep("D", "Merge B and C: {B} and {C}", Arrays.asList("B", "C"))
+            createStep("D", "Merge B and C: {B} and {C}", Arrays.asList("B", "C")),
+            createStep("output_node", "Final output: {D}", Arrays.asList("D"))
         );
 
         // When: Create GraphWorkflow

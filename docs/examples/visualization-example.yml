@@ -1,0 +1,225 @@
+# Spring AI Agents - Visualization Example Configuration
+# This configuration enables all visualization features and provides sample agents
+# to demonstrate graph structure visualization, real-time status tracking, and
+# interactive graph creation capabilities.
+#
+# IMPORTANT: All agents MUST include both 'input_node' and 'output_node':
+# - input_node: Entry point where agent receives user requests via agentService.invoke()
+# - output_node: Exit point that returns the final result to the user
+# These nodes are mandatory for proper workflow validation and execution.
+
+spring:
+  ai:
+    # OpenAI Configuration
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key-here}
+      chat:
+        options:
+          model: gpt-4
+          temperature: 0.7
+    
+    # Agent Configuration with Visualization Features
+    agents:
+      # Simple Sequential Workflow Agent
+      - name: "data-processor"
+        systemPrompt: "You are a data processing expert. Analyze data step by step."
+        workflow:
+          type: graph
+          chain:
+            - nodeId: "extract"
+              prompt: "Extract key information from: {input}"
+              
+            - nodeId: "analyze"
+              dependsOn: ["extract"]
+              prompt: "Analyze the extracted data: {extract}"
+              
+            - nodeId: "summarize"
+              dependsOn: ["analyze"]
+              prompt: "Create a summary based on analysis: {analyze}"
+
+      # Parallel Processing Agent
+      - name: "research-agent"
+        systemPrompt: "You are a research assistant conducting comprehensive analysis."
+        workflow:
+          type: graph
+          chain:
+            - nodeId: "initial_research"
+              prompt: "Conduct initial research on: {input}"
+              
+            - nodeId: "technical_analysis"
+              dependsOn: ["initial_research"]
+              prompt: "Perform technical analysis: {initial_research}"
+              
+            - nodeId: "market_analysis"
+              dependsOn: ["initial_research"]
+              prompt: "Perform market analysis: {initial_research}"
+              
+            - nodeId: "risk_assessment"
+              dependsOn: ["initial_research"]
+              prompt: "Assess risks based on: {initial_research}"
+              
+            - nodeId: "final_report"
+              dependsOn: ["technical_analysis", "market_analysis", "risk_assessment"]
+              prompt: |
+                Generate comprehensive report:
+                Technical: {technical_analysis}
+                Market: {market_analysis}
+                Risk: {risk_assessment}
+
+      # Conditional Logic Agent
+      - name: "smart-router"
+        systemPrompt: "You are an intelligent request router."
+        workflow:
+          type: graph
+          chain:
+            - nodeId: "classify_request"
+              conditional:
+                condition:
+                  type: CONTAINS
+                  field: "input"
+                  value: "urgent"
+                  ignoreCase: true
+                thenStep:
+                  prompt: "URGENT: Fast-track processing for: {input}"
+                elseStep:
+                  prompt: "Standard processing for: {input}"
+                  
+            - nodeId: "process_result"
+              dependsOn: ["classify_request"]
+              prompt: "Process the classified request: {classify_request}"
+
+      # Complex Orchestrator Agent
+      - name: "project-manager"
+        systemPrompt: "You are a project manager coordinating multiple teams."
+        workflow:
+          type: graph
+          chain:
+            - nodeId: "project_planning"
+              prompt: "Create project plan for: {input}"
+              
+            - nodeId: "technical_team"
+              dependsOn: ["project_planning"]
+              prompt: "Technical team analysis: {project_planning}"
+              
+            - nodeId: "design_team"
+              dependsOn: ["project_planning"]
+              prompt: "Design team analysis: {project_planning}"
+              
+            - nodeId: "qa_team"
+              dependsOn: ["project_planning"]
+              prompt: "QA team analysis: {project_planning}"
+              
+            - nodeId: "integration_review"
+              dependsOn: ["technical_team", "design_team"]
+              prompt: "Review technical and design integration: Tech={technical_team}, Design={design_team}"
+              
+            - nodeId: "final_coordination"
+              dependsOn: ["integration_review", "qa_team"]
+              prompt: |
+                Final project coordination:
+                Integration: {integration_review}
+                QA: {qa_team}
+                Provide final recommendations.
+
+      # Tool Integration Agent (requires MCP tools)
+      - name: "web-researcher"
+        systemPrompt: "You are a web research specialist using various tools."
+        workflow:
+          type: graph
+          chain:
+            - nodeId: "search_web"
+              tool: "web_search"
+              
+            - nodeId: "analyze_results"
+              dependsOn: ["search_web"]
+              prompt: "Analyze search results: {search_web}"
+              
+            - nodeId: "fact_check"
+              dependsOn: ["analyze_results"]
+              prompt: "Fact-check the analysis: {analyze_results}"
+              
+            - nodeId: "generate_report"
+              dependsOn: ["fact_check"]
+              prompt: "Generate research report: {fact_check}"
+
+    # Visualization Configuration - Enable All Features
+    visualization:
+      # Enable graph structure visualization
+      graph-structure: true
+      
+      # Enable real-time execution status tracking
+      real-time-status: true
+      
+      # Enable interactive graph creation web interface
+      interactive-creator: true
+      
+      # Visualization server configuration
+      port: 8081
+      base-path: "/visualization"
+      websocket-endpoint: "/ws/status"
+
+# Server Configuration
+server:
+  port: 8080
+
+# Logging Configuration
+logging:
+  level:
+    com.springai.agent: DEBUG
+    com.springai.agent.service.ExecutionStatusService: INFO
+    com.springai.agent.service.GraphVisualizationService: INFO
+    com.springai.agent.controller: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# MCP Server Configuration (Optional - for tool integration)
+mcp:
+  servers:
+    web_search:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-web-search"]
+      env:
+        BRAVE_API_KEY: "${BRAVE_API_KEY:}"
+
+---
+# Development Profile - Additional Debug Settings
+spring:
+  config:
+    activate:
+      on-profile: dev
+      
+logging:
+  level:
+    com.springai.agent: TRACE
+    org.springframework.web: DEBUG
+    org.springframework.messaging: DEBUG
+
+---
+# Production Profile - Optimized Settings
+spring:
+  config:
+    activate:
+      on-profile: prod
+      
+  ai:
+    agents:
+      visualization:
+        # In production, you might want to disable some features
+        graph-structure: true
+        real-time-status: false  # Disable for performance
+        interactive-creator: false  # Disable for security
+
+logging:
+  level:
+    com.springai.agent: INFO
+    root: WARN

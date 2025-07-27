@@ -1,9 +1,10 @@
 package com.springai.agent.config;
 
-import com.springai.agent.config.AppProperties.WorkflowDef;
-import com.springai.agent.config.AppProperties.WorkflowStepDef;
-import com.springai.agent.config.AppProperties.TaskDef;
+import com.springai.agent.config.AgentsProperties.WorkflowDef;
+import com.springai.agent.config.AgentsProperties.WorkflowStepDef;
+import com.springai.agent.config.AgentsProperties.TaskDef;
 import com.springai.agent.service.McpToolService;
+import com.springai.agent.service.ExecutionStatusService;
 import com.springai.agent.workflow.GraphWorkflow;
 import com.springai.agent.workflow.Workflow;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,23 +42,32 @@ class WorkflowConversionTest {
     @Test
     void testGraphWorkflowRemainsUnchanged() {
         // Given: A GRAPH workflow configuration
-        WorkflowDef graphWorkflow = WorkflowDef.builder()
-            .type(WorkflowType.GRAPH)
-            .chain(Arrays.asList(
-                WorkflowStepDef.builder()
-                    .nodeId("A")
-                    .prompt("Step A: {input}")
-                    .build(),
-                WorkflowStepDef.builder()
-                    .nodeId("B")
-                    .dependsOn(List.of("A"))
-                    .prompt("Step B: {A}")
-                    .build()
-            ))
-            .build();
+        WorkflowDef graphWorkflow = new WorkflowDef();
+        graphWorkflow.setType(WorkflowType.GRAPH);
+        
+        WorkflowStepDef inputNode = new WorkflowStepDef();
+        inputNode.setNodeId("input_node");
+        inputNode.setPrompt("Receive input: {input}");
+        
+        WorkflowStepDef step1 = new WorkflowStepDef();
+        step1.setNodeId("A");
+        step1.setPrompt("Step A: {input_node}");
+        step1.setDependsOn(List.of("input_node"));
+        
+        WorkflowStepDef step2 = new WorkflowStepDef();
+        step2.setNodeId("B");
+        step2.setDependsOn(List.of("A"));
+        step2.setPrompt("Step B: {A}");
+        
+        WorkflowStepDef outputNode = new WorkflowStepDef();
+        outputNode.setNodeId("output_node");
+        outputNode.setPrompt("Final output: {B}");
+        outputNode.setDependsOn(List.of("B"));
+        
+        graphWorkflow.setChain(Arrays.asList(inputNode, step1, step2, outputNode));
 
         // When: Building the workflow
-        Workflow result = agentConfiguration.buildWorkflow(graphWorkflow, chatModel, mcpToolService);
+        Workflow result = agentConfiguration.buildWorkflow(graphWorkflow, chatModel, mcpToolService, null);
 
         // Then: Should return GraphWorkflow instance
         assertNotNull(result);
