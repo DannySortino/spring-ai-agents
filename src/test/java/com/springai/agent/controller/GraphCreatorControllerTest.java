@@ -225,9 +225,8 @@ class GraphCreatorControllerTest {
         assertNotNull(response.getBody());
         
         String yaml = response.getBody();
-        assertTrue(yaml.contains("spring:"));
-        assertTrue(yaml.contains("ai:"));
         assertTrue(yaml.contains("agents:"));
+        assertTrue(yaml.contains("list:"));
         assertTrue(yaml.contains("name: test-agent"));
         assertTrue(yaml.contains("systemPrompt: Test system prompt"));
         assertTrue(yaml.contains("type: graph"));

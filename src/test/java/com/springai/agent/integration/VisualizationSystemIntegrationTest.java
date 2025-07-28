@@ -444,9 +444,8 @@ class VisualizationSystemIntegrationTest {
                 .andExpect(content().contentType(MediaType.TEXT_PLAIN))
                 .andExpect(header().string("Content-Disposition", 
                     "attachment; filename=\"test-yaml-agent-workflow.yml\""))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("spring:")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("ai:")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("agents:")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("list:")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("name: test-yaml-agent")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("type: graph")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("nodeId: step1")));

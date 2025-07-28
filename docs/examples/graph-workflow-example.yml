@@ -18,9 +18,14 @@ agents:
         workflow:
           type: graph
           chain:
-            # Node A: Initial data extraction (no dependencies)
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive and validate user data analysis request: {input}"
+              
+            # Node A: Initial data extraction (depends on input_node)
             - nodeId: "extract_data"
-              prompt: "Extract key data points from the input: {input}"
+              dependsOn: ["input_node"]
+              prompt: "Extract key data points from the input: {input_node}"
               
             # Node B: Statistical analysis (depends on A)
             - nodeId: "statistical_analysis"
@@ -36,15 +41,25 @@ agents:
             - nodeId: "generate_report"
               dependsOn: ["statistical_analysis", "trend_analysis"]
               prompt: "Generate a comprehensive report combining statistical analysis: {statistical_analysis} and trend analysis: {trend_analysis}"
+              
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["generate_report"]
+              prompt: "Present final analysis report: {generate_report}"
 
       - name: "research-workflow-agent"
         systemPrompt: "You are a research assistant that conducts thorough analysis."
         workflow:
           type: graph
           chain:
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive and categorize research request: {input}"
+              
             # Complex dependency pattern: A->B, B->C, A->C (as specified in the issue)
             - nodeId: "initial_research"
-              prompt: "Conduct initial research on: {input}"
+              dependsOn: ["input_node"]
+              prompt: "Conduct initial research on: {input_node}"
               
             - nodeId: "deep_dive"
               dependsOn: ["initial_research"]
@@ -53,14 +68,24 @@ agents:
             - nodeId: "synthesis"
               dependsOn: ["initial_research", "deep_dive"]
               prompt: "Synthesize findings from initial research: {initial_research} and deep dive: {deep_dive}"
+              
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["synthesis"]
+              prompt: "Present comprehensive research findings: {synthesis}"
 
       - name: "tool-integration-agent"
         systemPrompt: "You are an agent that integrates multiple tools in a workflow."
         workflow:
           type: graph
           chain:
-            # Node with tool call
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive and prepare search query: {input}"
+              
+            # Node with tool call (depends on input_node)
             - nodeId: "search_web"
+              dependsOn: ["input_node"]
               tool: "web_search"
               
             # Node depending on tool result
@@ -81,15 +106,25 @@ agents:
             - nodeId: "create_summary"
               dependsOn: ["extract_facts", "identify_sources"]
               prompt: "Create summary with facts: {extract_facts} and sources: {identify_sources}"
+              
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["create_summary"]
+              prompt: "Present final research summary: {create_summary}"
 
       - name: "parallel-processing-agent"
         systemPrompt: "You demonstrate parallel execution of independent nodes."
         workflow:
           type: graph
           chain:
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive user request: {input}"
+              
             # Root node
             - nodeId: "input_processing"
-              prompt: "Process and categorize input: {input}"
+              dependsOn: ["input_node"]
+              prompt: "Process and categorize input: {input_node}"
               
             # Three independent branches that can execute in parallel
             - nodeId: "branch_a"
@@ -108,6 +143,11 @@ agents:
             - nodeId: "merge_results"
               dependsOn: ["branch_a", "branch_b", "branch_c"]
               prompt: "Merge results from A: {branch_a}, B: {branch_b}, C: {branch_c}"
+              
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["merge_results"]
+              prompt: "Present final merged results: {merge_results}"
 
       # Conditional Logic Agent - demonstrates all condition types
       - name: "conditional-logic-agent"
@@ -115,18 +155,23 @@ agents:
         workflow:
           type: graph
           chain:
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive and prepare request for conditional processing: {input}"
+            
             # EQUALS condition example
             - nodeId: "priority_check"
+              dependsOn: ["input_node"]
               conditional:
                 condition:
                   type: EQUALS
-                  field: "input"
+                  field: "input_node"
                   value: "high priority"
                   ignoreCase: true
                 thenStep:
-                  prompt: "HIGH PRIORITY: Immediate attention required for: {input}"
+                  prompt: "HIGH PRIORITY: Immediate attention required for: {input_node}"
                 elseStep:
-                  prompt: "Standard processing for: {input}"
+                  prompt: "Standard processing for: {input_node}"
             
             # CONTAINS condition with nested logic
             - nodeId: "content_analysis"
@@ -134,22 +179,22 @@ agents:
               conditional:
                 condition:
                   type: CONTAINS
-                  field: "input"
+                  field: "input_node"
                   value: "urgent"
                   ignoreCase: true
                 thenStep:
                   conditional:
                     condition:
                       type: REGEX
-                      field: "input"
+                      field: "input_node"
                       value: ".*emergency.*|.*critical.*|.*urgent.*"
                     thenStep:
-                      prompt: "EMERGENCY PROTOCOL: {input} - Escalating immediately"
+                      prompt: "EMERGENCY PROTOCOL: {input_node} - Escalating immediately"
                       tool: "emergencyTool"
                     elseStep:
-                      prompt: "Urgent but manageable: {input}"
+                      prompt: "Urgent but manageable: {input_node}"
                 elseStep:
-                  prompt: "Regular processing: {input}"
+                  prompt: "Regular processing: {input_node}"
             
             # EXISTS and EMPTY condition examples
             - nodeId: "validation_check"
@@ -159,9 +204,14 @@ agents:
                   type: EXISTS
                   field: "context.userId"
                 thenStep:
-                  prompt: "Authenticated user request: {input}"
+                  prompt: "Authenticated user request: {input_node}"
                 elseStep:
-                  prompt: "Anonymous request: {input} - Limited functionality available"
+                  prompt: "Anonymous request: {input_node} - Limited functionality available"
+            
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["validation_check"]
+              prompt: "Present final conditional processing result: {validation_check}"
 
       # Orchestrator Pattern Agent - manager-worker-synthesizer using GraphWorkflow
       - name: "orchestrator-agent"
@@ -169,22 +219,27 @@ agents:
         workflow:
           type: graph
           chain:
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive project request: {input}"
+            
             # Manager node - analyzes and makes decisions
             - nodeId: "manager"
-              prompt: "As project manager, analyze this request and determine team assignments: {input}"
+              dependsOn: ["input_node"]
+              prompt: "As project manager, analyze this request and determine team assignments: {input_node}"
             
             # Worker nodes - execute in parallel, all depend on manager
             - nodeId: "technical_specialist"
               dependsOn: ["manager"]
-              prompt: "Technical Specialist - Manager decision: {manager} - Handle technical aspects: {input}"
+              prompt: "Technical Specialist - Manager decision: {manager} - Handle technical aspects: {input_node}"
             
             - nodeId: "business_analyst"
               dependsOn: ["manager"]
-              prompt: "Business Analyst - Manager decision: {manager} - Analyze business requirements: {input}"
+              prompt: "Business Analyst - Manager decision: {manager} - Analyze business requirements: {input_node}"
             
             - nodeId: "quality_assurance"
               dependsOn: ["manager"]
-              prompt: "QA Specialist - Manager decision: {manager} - Review quality aspects: {input}"
+              prompt: "QA Specialist - Manager decision: {manager} - Review quality aspects: {input_node}"
             
             # Synthesizer node - combines all results
             - nodeId: "project_synthesizer"
@@ -197,6 +252,11 @@ agents:
                 Quality Review: {quality_assurance}
                 
                 Provide comprehensive project recommendations.
+            
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["project_synthesizer"]
+              prompt: "Present final project recommendations: {project_synthesizer}"
 
       # Advanced Routing Agent - content-based routing with conditional logic
       - name: "advanced-routing-agent"
@@ -204,34 +264,39 @@ agents:
         workflow:
           type: graph
           chain:
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive request for intelligent routing: {input}"
+            
             - nodeId: "intelligent_router"
+              dependsOn: ["input_node"]
               conditional:
                 condition:
                   type: REGEX
-                  field: "input"
+                  field: "input_node"
                   value: ".*technical.*|.*bug.*|.*error.*|.*system.*"
                 thenStep:
-                  prompt: "TECHNICAL ROUTE: Routing to technical support: {input}"
+                  prompt: "TECHNICAL ROUTE: Routing to technical support: {input_node}"
                   tool: "technicalSupportTool"
                 elseStep:
                   conditional:
                     condition:
                       type: CONTAINS
-                      field: "input"
+                      field: "input_node"
                       value: "billing"
                       ignoreCase: true
                     thenStep:
                       conditional:
                         condition:
                           type: CONTAINS
-                          field: "input"
+                          field: "input_node"
                           value: "dispute"
                           ignoreCase: true
                         thenStep:
-                          prompt: "BILLING DISPUTE ROUTE: Handling billing dispute: {input}"
+                          prompt: "BILLING DISPUTE ROUTE: Handling billing dispute: {input_node}"
                           tool: "billingDisputeTool"
                         elseStep:
-                          prompt: "BILLING ROUTE: Handling billing inquiry: {input}"
+                          prompt: "BILLING ROUTE: Handling billing inquiry: {input_node}"
                           tool: "billingTool"
                     elseStep:
                       conditional:
@@ -239,14 +304,19 @@ agents:
                           type: EMPTY
                           field: "context.userType"
                         thenStep:
-                          prompt: "GUEST ROUTE: Limited assistance for guest user: {input}"
+                          prompt: "GUEST ROUTE: Limited assistance for guest user: {input_node}"
                         elseStep:
-                          prompt: "GENERAL ROUTE: Full assistance for registered user: {input}"
+                          prompt: "GENERAL ROUTE: Full assistance for registered user: {input_node}"
             
             # Follow-up processing based on routing decision
             - nodeId: "post_routing_analysis"
               dependsOn: ["intelligent_router"]
               prompt: "Analyze routing decision and provide additional context: {intelligent_router}"
+            
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["post_routing_analysis"]
+              prompt: "Present final routing result: {post_routing_analysis}"
 
       # Complex Combined Pattern Agent - shows orchestrator + conditional + routing
       - name: "complex-unified-agent"
@@ -254,18 +324,23 @@ agents:
         workflow:
           type: graph
           chain:
+            # REQUIRED: input_node - Entry point for user requests
+            - nodeId: "input_node"
+              prompt: "Receive request for complex unified processing: {input}"
+            
             # Initial routing decision
             - nodeId: "request_classifier"
+              dependsOn: ["input_node"]
               conditional:
                 condition:
                   type: CONTAINS
-                  field: "input"
+                  field: "input_node"
                   value: "complex"
                   ignoreCase: true
                 thenStep:
-                  prompt: "Complex request detected - initiating orchestrator pattern: {input}"
+                  prompt: "Complex request detected - initiating orchestrator pattern: {input_node}"
                 elseStep:
-                  prompt: "Simple request - direct processing: {input}"
+                  prompt: "Simple request - direct processing: {input_node}"
             
             # Conditional orchestrator activation
             - nodeId: "orchestrator_manager"
@@ -276,9 +351,9 @@ agents:
                   field: "request_classifier"
                   value: "orchestrator"
                 thenStep:
-                  prompt: "Manager: Coordinating complex request: {input}"
+                  prompt: "Manager: Coordinating complex request: {input_node}"
                 elseStep:
-                  prompt: "Direct handler: Processing simple request: {input}"
+                  prompt: "Direct handler: Processing simple request: {input_node}"
             
             # Parallel workers (only activated for complex requests)
             - nodeId: "specialist_a"
@@ -289,7 +364,7 @@ agents:
                   field: "orchestrator_manager"
                   value: "Coordinating"
                 thenStep:
-                  prompt: "Specialist A: {orchestrator_manager} - Handling aspect A of: {input}"
+                  prompt: "Specialist A: {orchestrator_manager} - Handling aspect A of: {input_node}"
                 elseStep:
                   prompt: "Skipping specialist A for simple request"
             
@@ -301,7 +376,7 @@ agents:
                   field: "orchestrator_manager"
                   value: "Coordinating"
                 thenStep:
-                  prompt: "Specialist B: {orchestrator_manager} - Handling aspect B of: {input}"
+                  prompt: "Specialist B: {orchestrator_manager} - Handling aspect B of: {input_node}"
                 elseStep:
                   prompt: "Skipping specialist B for simple request"
             
@@ -316,6 +391,11 @@ agents:
                 Specialist B: {specialist_b}
                 
                 Provide comprehensive final response.
+            
+            # REQUIRED: output_node - Final result returned to user
+            - nodeId: "output_node"
+              dependsOn: ["final_synthesizer"]
+              prompt: "Present final unified processing result: {final_synthesizer}"
 
 # MCP Server Configuration (if using tools)
 mcp:
