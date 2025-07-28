@@ -122,7 +122,12 @@ public class GraphVisualizationService {
      * Determine the type of node based on its configuration.
      */
     private String determineNodeType(WorkflowStepDef step) {
-        if (step.getConditional() != null) {
+        // Check for special input/output nodes first
+        if ("input_node".equals(step.getNodeId())) {
+            return "input_node";
+        } else if ("output_node".equals(step.getNodeId())) {
+            return "output_node";
+        } else if (step.getConditional() != null) {
             return "conditional";
         } else if (step.getTool() != null) {
             return "tool";

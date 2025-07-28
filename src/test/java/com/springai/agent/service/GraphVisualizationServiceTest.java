@@ -328,6 +328,44 @@ class GraphVisualizationServiceTest {
         assertTrue(graphData.edges().isEmpty());
     }
 
+    @Test
+    @DisplayName("Should correctly identify input_node and output_node types")
+    void testNodeTypeIdentification_InputOutputNodes() {
+        // Given - Workflow with input_node, regular node, and output_node
+        WorkflowStepDef inputNode = createStep("input_node", "Receive user request: {input}", null, null);
+        WorkflowStepDef processNode = createStep("process", "Process the request: {input_node}", Arrays.asList("input_node"), null);
+        WorkflowStepDef outputNode = createStep("output_node", "Present final result: {process}", Arrays.asList("process"), null);
+        
+        WorkflowDef workflow = new WorkflowDef();
+        workflow.setType(WorkflowType.GRAPH);
+        workflow.setChain(Arrays.asList(inputNode, processNode, outputNode));
+        
+        AgentDef agent = createAgentDef("test-agent", workflow);
+        AgentsProperties.setList(Arrays.asList(agent));
+
+        // When
+        List<AgentGraphData> result = service.getAllAgentGraphs();
+
+        // Then
+        assertEquals(1, result.size());
+        
+        AgentGraphData graphData = result.get(0);
+        assertEquals(3, graphData.nodes().size());
+        
+        // Verify node types
+        NodeData inputNodeData = findNodeById(graphData.nodes(), "input_node");
+        assertNotNull(inputNodeData);
+        assertEquals("input_node", inputNodeData.type(), "input_node should be identified as 'input_node' type");
+        
+        NodeData processNodeData = findNodeById(graphData.nodes(), "process");
+        assertNotNull(processNodeData);
+        assertEquals("prompt", processNodeData.type(), "regular node should be identified as 'prompt' type");
+        
+        NodeData outputNodeData = findNodeById(graphData.nodes(), "output_node");
+        assertNotNull(outputNodeData);
+        assertEquals("output_node", outputNodeData.type(), "output_node should be identified as 'output_node' type");
+    }
+
     // Helper methods
     private AgentDef createAgentDef(String name, WorkflowDef workflow) {
         AgentDef agent = new AgentDef();

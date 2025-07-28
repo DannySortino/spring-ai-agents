@@ -86,17 +86,15 @@ public class GraphCreatorController {
             // Convert to AppProperties structure
             AppProperties.AgentDef agentDef = convertToAgentDef(graphDef);
             
-            // Create a wrapper structure for YAML generation
+            // Create the required structure: agents.list
             Map<String, Object> yamlStructure = new LinkedHashMap<>();
-            Map<String, Object> springConfig = new LinkedHashMap<>();
-            Map<String, Object> aiConfig = new LinkedHashMap<>();
+            Map<String, Object> agentsConfig = new LinkedHashMap<>();
             
-            List<Map<String, Object>> agents = new ArrayList<>();
-            agents.add(convertAgentToMap(agentDef));
+            List<Map<String, Object>> agentsList = new ArrayList<>();
+            agentsList.add(convertAgentToMap(agentDef));
             
-            aiConfig.put("agents", agents);
-            springConfig.put("ai", aiConfig);
-            yamlStructure.put("spring", springConfig);
+            agentsConfig.put("list", agentsList);
+            yamlStructure.put("agents", agentsConfig);
             
             String yaml = yamlMapper.writeValueAsString(yamlStructure);
             
@@ -323,7 +321,7 @@ public class GraphCreatorController {
         Map<String, Object> stepMap = new LinkedHashMap<>();
         stepMap.put("nodeId", step.getNodeId());
         
-        if (step.getPrompt() != null) {
+        if (step.getPrompt() != null && !step.getPrompt().trim().isEmpty()) {
             stepMap.put("prompt", step.getPrompt());
         }
         if (step.getTool() != null) {

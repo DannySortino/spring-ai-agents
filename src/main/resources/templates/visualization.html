@@ -141,6 +141,259 @@
             box-shadow: 0 4px 15px var(--shadow-hover);
         }
 
+        /* Compact Feature Status Bar */
+        .feature-status-bar {
+            border: none;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px var(--shadow-color);
+            border-radius: 8px;
+        }
+
+        .feature-status-item {
+            display: inline-flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .feature-status-item .feature-name {
+            font-weight: 500;
+        }
+
+        .badge-sm {
+            font-size: 0.75em;
+            padding: 0.25em 0.5em;
+        }
+
+        .feature-details {
+            border-top: 1px solid var(--border-light);
+            padding-top: 1rem;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .feature-detail-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-detail-card:hover {
+            background: var(--bg-primary);
+            border-color: var(--border-color);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #featureToggleIcon {
+            transition: transform 0.3s ease;
+        }
+
+        #featureToggleIcon.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* Notification Center Styles */
+        .notification-center-container {
+            position: relative;
+        }
+
+        .notification-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .notification-toggle:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--primary);
+        }
+
+        .notification-toggle i {
+            font-size: 14px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: notificationPulse 2s infinite;
+        }
+
+        @keyframes notificationPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 350px;
+            max-height: 400px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            z-index: 1000;
+            margin-top: 5px;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-tertiary);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .notification-header h6 {
+            color: var(--text-primary);
+            margin: 0;
+            flex: 1;
+        }
+
+        .notification-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-light);
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .notification-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item.unread {
+            background: var(--bg-primary);
+            border-left: 3px solid var(--primary);
+        }
+
+        .notification-item.unread::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .notification-icon {
+            flex-shrink: 0;
+            width: 20px;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .notification-icon.success { color: var(--success); }
+        .notification-icon.danger { color: var(--danger); }
+        .notification-icon.warning { color: var(--warning); }
+        .notification-icon.info { color: var(--info); }
+
+        .notification-text {
+            flex: 1;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .notification-time {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .no-notifications {
+            padding: 20px;
+        }
+
+        .no-notifications i {
+            font-size: 24px;
+            display: block;
+        }
+
+        /* Notification Filter Styles */
+        .notification-filters {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .notification-filter {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .notification-filter:hover {
+            background: var(--bg-primary);
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .notification-filter.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .notification-filter i {
+            font-size: 10px;
+            margin-right: 4px;
+        }
+
         .graph-container {
             height: 600px;
             border: 2px solid var(--border-color);
@@ -196,7 +449,9 @@
         }
 
         .node-details {
-            background: #f8f9fa;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
             border-radius: 5px;
             padding: 10px;
             margin: 5px 0;
@@ -475,6 +730,323 @@
         .alert-dismissible {
             position: relative;
         }
+
+        /* Fix Bootstrap classes to use theme variables */
+        .navbar-text {
+            color: var(--text-primary) !important;
+        }
+
+        .navbar-dark {
+            background-color: var(--bg-secondary) !important;
+        }
+
+        h6, .h6 {
+            color: var(--text-primary) !important;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .form-text {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Fix specific Bootstrap text color classes for theming */
+        .text-success {
+            color: var(--success) !important;
+        }
+
+        .text-danger {
+            color: var(--danger) !important;
+        }
+
+        .text-warning {
+            color: var(--warning) !important;
+        }
+
+        .text-info {
+            color: var(--info) !important;
+        }
+
+        .text-primary {
+            color: var(--primary) !important;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Fix Bootstrap card components for dark mode */
+        .card {
+            background-color: var(--bg-secondary) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .card-header {
+            background-color: var(--bg-tertiary) !important;
+            border-bottom-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .card-body {
+            background-color: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        /* Fix Bootstrap list-group components for dark mode */
+        .list-group-item {
+            background-color: var(--bg-secondary) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .list-group-item-action {
+            color: var(--text-primary) !important;
+        }
+
+        .list-group-item-action:hover,
+        .list-group-item-action:focus {
+            background-color: var(--bg-tertiary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .list-group-item.active {
+            background-color: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+        }
+
+        /* Ensure form controls work properly in all contexts */
+        .form-control::placeholder {
+            color: var(--text-muted) !important;
+            opacity: 0.7;
+        }
+
+        .form-control:disabled {
+            background-color: var(--bg-tertiary) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        /* Validation feedback styles */
+        .form-control.is-invalid {
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .invalid-feedback {
+            color: var(--danger) !important;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        /* Responsive Layout Optimizations */
+        
+        /* Mobile-first approach - optimize for small screens */
+        @media (max-width: 576px) {
+            .container-fluid {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            
+            .feature-status-bar .d-flex {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .feature-status-item {
+                font-size: 12px;
+            }
+            
+            .nav-tabs .nav-link {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+            
+            .graph-container {
+                height: 400px;
+            }
+            
+            .notification-dropdown {
+                width: calc(100vw - 20px);
+                right: -10px;
+            }
+        }
+        
+        /* Tablet optimization */
+        @media (min-width: 577px) and (max-width: 768px) {
+            .graph-container {
+                height: 500px;
+            }
+            
+            .notification-dropdown {
+                width: 320px;
+            }
+        }
+        
+        /* Desktop optimization */
+        @media (min-width: 769px) {
+            .graph-container {
+                height: 600px;
+            }
+        }
+        
+        /* Large desktop optimization */
+        @media (min-width: 1200px) {
+            .graph-container {
+                height: 700px;
+            }
+            
+            .container-fluid {
+                max-width: 1400px;
+            }
+        }
+        
+        /* Ultra-wide screen optimization */
+        @media (min-width: 1600px) {
+            .graph-container {
+                height: 800px;
+            }
+            
+            .container-fluid {
+                max-width: 1600px;
+            }
+        }
+        
+        /* Vertical space optimization */
+        @media (max-height: 600px) {
+            .graph-container {
+                height: 300px;
+            }
+            
+            .notification-dropdown {
+                max-height: 250px;
+            }
+            
+            .notification-list {
+                max-height: 150px;
+            }
+        }
+        
+        @media (min-height: 900px) {
+            .graph-container {
+                height: calc(100vh - 300px);
+                min-height: 600px;
+            }
+        }
+        
+        /* Flexible layout improvements */
+        .tab-content {
+            min-height: calc(100vh - 250px);
+        }
+        
+        .card {
+            height: 100%;
+        }
+        
+        .card-body {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .list-group {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Resizable Panes Styles */
+        .resizable-container {
+            position: relative;
+            display: flex;
+            height: 100%;
+        }
+
+        .resizable-pane {
+            position: relative;
+            overflow: hidden;
+            transition: width 0.1s ease-out;
+        }
+
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: -3px;
+            width: 6px;
+            height: 100%;
+            background: transparent;
+            cursor: col-resize;
+            z-index: 10;
+            transition: background-color 0.2s ease;
+        }
+
+        .resize-handle:hover {
+            background: var(--primary);
+            opacity: 0.5;
+        }
+
+        .resize-handle.dragging {
+            background: var(--primary);
+            opacity: 0.8;
+        }
+
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px;
+            height: 30px;
+            background: var(--border-color);
+            border-radius: 1px;
+        }
+
+        .resize-handle:hover::before {
+            background: white;
+        }
+
+        .resizable-pane.resizing {
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .resizable-pane.resizing * {
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* Minimum and maximum widths for panes */
+        .resizable-pane.left-pane {
+            min-width: 200px;
+            max-width: 50%;
+        }
+
+        .resizable-pane.right-pane {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        /* Three-pane layout for Graph Creator */
+        .three-pane-container {
+            display: flex;
+            height: 100%;
+            gap: 0;
+        }
+
+        .three-pane-container .resizable-pane {
+            min-width: 150px;
+        }
+
+        .three-pane-container .resizable-pane.center-pane {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .three-pane-container .resizable-pane.side-pane {
+            max-width: 400px;
+        }
     </style>
 </head>
 <body>
@@ -490,6 +1062,50 @@
                     <i class="fas fa-circle text-success me-1"></i>
                     Connected
                 </span>
+                <!-- Notification Center -->
+                <div class="notification-center-container me-3">
+                    <button class="notification-toggle" id="notificationToggle" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+                    
+                    <!-- Notification Dropdown -->
+                    <div class="notification-dropdown" id="notificationDropdown" style="display: none;">
+                        <div class="notification-header">
+                            <h6 class="mb-0">Notifications</h6>
+                            <button class="btn btn-sm btn-link text-muted" id="clearAllNotifications">Clear All</button>
+                        </div>
+                        
+                        <!-- Notification Filters -->
+                        <div class="notification-filters px-3 py-2 border-bottom">
+                            <div class="d-flex flex-wrap gap-1">
+                                <button class="btn btn-sm notification-filter active" data-type="all" title="Show all notifications">
+                                    <i class="fas fa-list"></i> All
+                                </button>
+                                <button class="btn btn-sm notification-filter" data-type="success" title="Show success notifications">
+                                    <i class="fas fa-check-circle text-success"></i> Success
+                                </button>
+                                <button class="btn btn-sm notification-filter" data-type="danger" title="Show error notifications">
+                                    <i class="fas fa-exclamation-triangle text-danger"></i> Error
+                                </button>
+                                <button class="btn btn-sm notification-filter" data-type="warning" title="Show warning notifications">
+                                    <i class="fas fa-exclamation-circle text-warning"></i> Warning
+                                </button>
+                                <button class="btn btn-sm notification-filter" data-type="info" title="Show info notifications">
+                                    <i class="fas fa-info-circle text-info"></i> Info
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-list" id="notificationList">
+                            <div class="no-notifications text-muted text-center py-3">
+                                <i class="fas fa-bell-slash mb-2"></i>
+                                <p class="mb-0">No notifications</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
@@ -498,35 +1114,64 @@
     </nav>
 
     <div class="container-fluid mt-4">
-        <!-- Feature Toggle Cards -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card feature-card" id="graphStructureCard">
-                    <div class="card-body text-center">
-                        <i class="fas fa-sitemap fa-2x text-primary mb-2"></i>
-                        <h5 class="card-title">Graph Structure</h5>
-                        <p class="card-text">Visualize workflow graph structure and dependencies</p>
-                        <span class="badge bg-secondary" id="graphStructureStatus">Disabled</span>
+        <!-- Compact Feature Status Bar -->
+        <div class="mb-3">
+            <div class="card feature-status-bar">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="feature-status-item">
+                                <i class="fas fa-sitemap me-1"></i>
+                                <span class="feature-name">Graph Structure</span>
+                                <span class="badge badge-sm bg-secondary ms-1" id="graphStructureStatus">Disabled</span>
+                            </span>
+                            <span class="feature-status-item">
+                                <i class="fas fa-chart-line me-1"></i>
+                                <span class="feature-name">Real-time Status</span>
+                                <span class="badge badge-sm bg-secondary ms-1" id="realTimeStatusStatus">Disabled</span>
+                            </span>
+                            <span class="feature-status-item">
+                                <i class="fas fa-edit me-1"></i>
+                                <span class="feature-name">Interactive Creator</span>
+                                <span class="badge badge-sm bg-secondary ms-1" id="interactiveCreatorStatus">Disabled</span>
+                            </span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" id="toggleFeatureDetails" title="Show/Hide feature details">
+                            <i class="fas fa-chevron-down" id="featureToggleIcon"></i>
+                        </button>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card feature-card" id="realTimeStatusCard">
-                    <div class="card-body text-center">
-                        <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
-                        <h5 class="card-title">Real-time Status</h5>
-                        <p class="card-text">Track execution status in real-time</p>
-                        <span class="badge bg-secondary" id="realTimeStatusStatus">Disabled</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card feature-card" id="interactiveCreatorCard">
-                    <div class="card-body text-center">
-                        <i class="fas fa-edit fa-2x text-warning mb-2"></i>
-                        <h5 class="card-title">Interactive Creator</h5>
-                        <p class="card-text">Create graph workflows interactively</p>
-                        <span class="badge bg-secondary" id="interactiveCreatorStatus">Disabled</span>
+                    
+                    <!-- Expandable Feature Details -->
+                    <div class="feature-details mt-3" id="featureDetails" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="feature-detail-card" id="graphStructureCard">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-sitemap text-primary me-2"></i>
+                                        <strong>Graph Structure</strong>
+                                    </div>
+                                    <p class="text-muted small mb-0">Visualize workflow graph structure and dependencies</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="feature-detail-card" id="realTimeStatusCard">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-chart-line text-success me-2"></i>
+                                        <strong>Real-time Status</strong>
+                                    </div>
+                                    <p class="text-muted small mb-0">Track execution status in real-time</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="feature-detail-card" id="interactiveCreatorCard">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-edit text-warning me-2"></i>
+                                        <strong>Interactive Creator</strong>
+                                    </div>
+                                    <p class="text-muted small mb-0">Create graph workflows interactively</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -554,9 +1199,9 @@
         <div class="tab-content" id="mainTabContent">
             <!-- Graph Structure Tab -->
             <div class="tab-pane fade show active" id="structure" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="card">
+                <div class="resizable-container">
+                    <div class="resizable-pane left-pane" style="width: 25%;">
+                        <div class="card h-100">
                             <div class="card-header">
                                 <h6 class="mb-0">Available Agents</h6>
                             </div>
@@ -566,9 +1211,10 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="resize-handle" data-target="structure"></div>
                     </div>
-                    <div class="col-md-9">
-                        <div class="card">
+                    <div class="resizable-pane right-pane">
+                        <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">Graph Visualization</h6>
                                 <div>
@@ -636,9 +1282,9 @@
 
             <!-- Graph Creator Tab -->
             <div class="tab-pane fade" id="creator" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="creator-panel">
+                <div class="three-pane-container">
+                    <div class="resizable-pane side-pane" style="width: 20%;">
+                        <div class="creator-panel h-100">
                             <h6>Node Palette</h6>
                             <div id="nodePalette">
                                 <!-- Node types will be loaded here -->
@@ -649,12 +1295,19 @@
                                 <!-- Templates will be loaded here -->
                             </div>
                         </div>
+                        <div class="resize-handle" data-target="creator-left"></div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="creator-panel">
+                    <div class="resizable-pane center-pane">
+                        <div class="creator-panel h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="mb-0">Graph Designer</h6>
                                 <div>
+                                    <button class="btn btn-sm btn-outline-primary" id="undoBtn" title="Undo last action (Ctrl+Z)" disabled>
+                                        <i class="fas fa-undo"></i> Undo
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" id="redoBtn" title="Redo last undone action (Ctrl+Y)" disabled>
+                                        <i class="fas fa-redo"></i> Redo
+                                    </button>
                                     <button class="btn btn-sm btn-outline-secondary" id="connectModeBtn" title="Toggle connection mode">
                                         <i class="fas fa-link"></i> Connect
                                     </button>
@@ -676,9 +1329,10 @@
                                 <!-- Graph designer will be here -->
                             </div>
                         </div>
+                        <div class="resize-handle" data-target="creator-right"></div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="creator-panel">
+                    <div class="resizable-pane side-pane" style="width: 20%;">
+                        <div class="creator-panel h-100">
                             <h6>Properties</h6>
                             <form id="graphPropertiesForm">
                                 <div class="mb-3">
@@ -751,6 +1405,10 @@
                             <label for="nodeTool" class="form-label">Tool Name</label>
                             <input type="text" class="form-control" id="nodeTool" placeholder="tool_name">
                             <div class="form-text">Name of the MCP tool to execute</div>
+                            
+                            <label for="nodeToolPrompt" class="form-label mt-3">Tool Prompt (Optional)</label>
+                            <textarea class="form-control" id="nodeToolPrompt" rows="3" placeholder="Enter the prompt for this tool node..."></textarea>
+                            <div class="form-text">Optional prompt to provide context or instructions for the tool execution</div>
                         </div>
 
                         <div class="mb-3" id="inputSection" style="display: none;">
@@ -802,6 +1460,12 @@
         // Graph designer state
         let connectionMode = false;
         let selectedNodeForConnection = null;
+        let deletionInProgress = false;
+
+        // Undo/Redo system
+        let undoHistory = [];
+        let redoHistory = [];
+        const MAX_HISTORY_SIZE = 50;
 
         // Theme Management System
         function initializeTheme() {
@@ -886,10 +1550,179 @@
             }
         }
 
+        // Undo/Redo System
+        function addToUndoHistory(actionData) {
+            // Add action to undo history
+            undoHistory.push(actionData);
+            
+            // Clear redo history when new action is performed
+            redoHistory = [];
+            
+            // Limit history size
+            if (undoHistory.length > MAX_HISTORY_SIZE) {
+                undoHistory.shift();
+            }
+            
+            // Update UI buttons
+            updateUndoRedoButtons();
+            
+            console.log('Added to undo history:', actionData);
+        }
+
+        function performUndo() {
+            if (undoHistory.length === 0) {
+                showAlert('Nothing to undo', 'warning');
+                return;
+            }
+            
+            const lastAction = undoHistory.pop();
+            console.log('Undoing action:', lastAction);
+            
+            try {
+                if (lastAction.type === 'delete_elements' || lastAction.type === 'delete_nodes' || lastAction.type === 'delete_single_node') {
+                    // Restore deleted nodes and edges
+                    const nodes = designerNetwork.body.data.nodes;
+                    const edges = designerNetwork.body.data.edges;
+                    
+                    // Restore nodes first
+                    if (lastAction.nodes && lastAction.nodes.length > 0) {
+                        lastAction.nodes.forEach(nodeData => {
+                            nodes.add(nodeData);
+                        });
+                    }
+                    
+                    // Restore edges (both selected edges and connected edges)
+                    const allEdgesToRestore = [];
+                    if (lastAction.edges) {
+                        allEdgesToRestore.push(...lastAction.edges);
+                    }
+                    if (lastAction.connectedEdges) {
+                        allEdgesToRestore.push(...lastAction.connectedEdges);
+                    }
+                    
+                    if (allEdgesToRestore.length > 0) {
+                        allEdgesToRestore.forEach(edgeData => {
+                            edges.add(edgeData);
+                        });
+                    }
+                    
+                    // Restore node dependencies
+                    if (lastAction.nodes) {
+                        lastAction.nodes.forEach(nodeData => {
+                            if (nodeData.nodeData && nodeData.nodeData.dependsOn) {
+                                nodes.update({
+                                    id: nodeData.id,
+                                    nodeData: nodeData.nodeData
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                // Add to redo history
+                redoHistory.push(lastAction);
+                
+                // Update UI
+                updateUndoRedoButtons();
+                showAlert('Undo successful', 'success');
+                
+            } catch (error) {
+                console.error('Error during undo:', error);
+                showAlert('Error during undo: ' + error.message, 'error');
+                // Put the action back if undo failed
+                undoHistory.push(lastAction);
+            }
+        }
+
+        function performRedo() {
+            if (redoHistory.length === 0) {
+                showAlert('Nothing to redo', 'warning');
+                return;
+            }
+            
+            const actionToRedo = redoHistory.pop();
+            console.log('Redoing action:', actionToRedo);
+            
+            try {
+                if (actionToRedo.type === 'delete_elements' || actionToRedo.type === 'delete_nodes' || actionToRedo.type === 'delete_single_node') {
+                    // Re-delete the nodes and edges
+                    const nodes = designerNetwork.body.data.nodes;
+                    const edges = designerNetwork.body.data.edges;
+                    
+                    // Remove edges first
+                    const allEdgesToRemove = [];
+                    if (actionToRedo.edges) {
+                        allEdgesToRemove.push(...actionToRedo.edges.map(edge => edge.id));
+                    }
+                    if (actionToRedo.connectedEdges) {
+                        allEdgesToRemove.push(...actionToRedo.connectedEdges.map(edge => edge.id));
+                    }
+                    
+                    if (allEdgesToRemove.length > 0) {
+                        edges.remove(allEdgesToRemove);
+                    }
+                    
+                    // Remove nodes
+                    if (actionToRedo.nodes && actionToRedo.nodes.length > 0) {
+                        const nodeIdsToRemove = actionToRedo.nodes.map(node => node.id);
+                        nodes.remove(nodeIdsToRemove);
+                        
+                        // Clean up connection ports
+                        nodeIdsToRemove.forEach(nodeId => {
+                            if (window.nodePorts && window.nodePorts[nodeId]) {
+                                if (window.nodePorts[nodeId].input) {
+                                    window.nodePorts[nodeId].input.remove();
+                                }
+                                if (window.nodePorts[nodeId].output) {
+                                    window.nodePorts[nodeId].output.remove();
+                                }
+                                delete window.nodePorts[nodeId];
+                            }
+                        });
+                    }
+                }
+                
+                // Add back to undo history
+                undoHistory.push(actionToRedo);
+                
+                // Update UI
+                updateUndoRedoButtons();
+                showAlert('Redo successful', 'success');
+                
+            } catch (error) {
+                console.error('Error during redo:', error);
+                showAlert('Error during redo: ' + error.message, 'error');
+                // Put the action back if redo failed
+                redoHistory.push(actionToRedo);
+            }
+        }
+
+        function updateUndoRedoButtons() {
+            // Update undo button
+            const undoBtn = document.getElementById('undoBtn');
+            if (undoBtn) {
+                undoBtn.disabled = undoHistory.length === 0;
+                undoBtn.title = undoHistory.length === 0 ? 'Nothing to undo' : `Undo (${undoHistory.length} actions available)`;
+            }
+            
+            // Update redo button
+            const redoBtn = document.getElementById('redoBtn');
+            if (redoBtn) {
+                redoBtn.disabled = redoHistory.length === 0;
+                redoBtn.title = redoHistory.length === 0 ? 'Nothing to redo' : `Redo (${redoHistory.length} actions available)`;
+            }
+        }
+
         // Initialize application
         document.addEventListener('DOMContentLoaded', async function() {
             // Initialize theme system first
             initializeTheme();
+            
+            // Initialize notification center
+            initializeNotificationCenter();
+            
+            // Initialize resizable panes
+            initializeResizablePanes();
 
             // Load configuration first and wait for it to complete
             await loadConfiguration();
@@ -913,6 +1746,8 @@
             document.getElementById('generateYamlBtn').addEventListener('click', generateYaml);
 
             // Graph designer event listeners
+            document.getElementById('undoBtn').addEventListener('click', performUndo);
+            document.getElementById('redoBtn').addEventListener('click', performRedo);
             document.getElementById('connectModeBtn').addEventListener('click', toggleConnectionMode);
             document.getElementById('autoArrangeBtn').addEventListener('click', autoArrangeNodes);
             document.getElementById('fitToViewBtn').addEventListener('click', fitDesignerToView);
@@ -925,6 +1760,20 @@
             document.getElementById('status-tab').addEventListener('shown.bs.tab', function() {
                 updateActiveExecutions();
                 updateExecutionHistory();
+            });
+
+            // Feature details toggle listener
+            document.getElementById('toggleFeatureDetails').addEventListener('click', function() {
+                const featureDetails = document.getElementById('featureDetails');
+                const toggleIcon = document.getElementById('featureToggleIcon');
+                
+                if (featureDetails.style.display === 'none') {
+                    featureDetails.style.display = 'block';
+                    toggleIcon.classList.add('rotated');
+                } else {
+                    featureDetails.style.display = 'none';
+                    toggleIcon.classList.remove('rotated');
+                }
             });
         });
 
@@ -956,12 +1805,12 @@
 
             if (enabled) {
                 statusElement.textContent = 'Enabled';
-                statusElement.className = 'badge bg-success';
-                cardElement.classList.remove('opacity-50');
+                statusElement.className = 'badge badge-sm bg-success ms-1';
+                if (cardElement) cardElement.classList.remove('opacity-50');
             } else {
                 statusElement.textContent = 'Disabled';
-                statusElement.className = 'badge bg-secondary';
-                cardElement.classList.add('opacity-50');
+                statusElement.className = 'badge badge-sm bg-secondary ms-1';
+                if (cardElement) cardElement.classList.add('opacity-50');
             }
         }
 
@@ -2100,6 +2949,22 @@
                     return;
                 }
                 
+                // Handle Ctrl+Z for undo
+                if (event.ctrlKey && event.key === 'z') {
+                    event.preventDefault();
+                    console.log('Ctrl+Z pressed, performing undo');
+                    performUndo();
+                    return;
+                }
+                
+                // Handle Ctrl+Y for redo
+                if (event.ctrlKey && event.key === 'y') {
+                    event.preventDefault();
+                    console.log('Ctrl+Y pressed, performing redo');
+                    performRedo();
+                    return;
+                }
+                
                 // Handle Delete/Backspace for node deletion
                 if (event.key === 'Delete' || event.key === 'Backspace') {
                     event.preventDefault();
@@ -2315,6 +3180,12 @@
         function deleteSelectedElements() {
             console.log('deleteSelectedElements called');
             
+            // Prevent multiple deletion operations
+            if (deletionInProgress) {
+                console.log('Deletion already in progress, ignoring request');
+                return;
+            }
+            
             if (!designerNetwork) {
                 console.log('No designer network available');
                 showAlert('Graph designer not initialized', 'error');
@@ -2354,22 +3225,61 @@
                     deleteMessage += `${selectedEdges.length} edge(s)`;
                 }
 
-                // Confirm deletion
-                if (confirm(`Delete ${deleteMessage}?`)) {
-                    const nodes = designerNetwork.body.data.nodes;
-                    const edges = designerNetwork.body.data.edges;
+                // Set deletion flag and execute deletion immediately
+                deletionInProgress = true;
+                
+                const nodes = designerNetwork.body.data.nodes;
+                const edges = designerNetwork.body.data.edges;
 
-                    // Remove selected edges first
-                    if (selectedEdges.length > 0) {
-                        console.log('Removing selected edges:', selectedEdges);
-                        
-                        // Get edge data before removal for dependency updates
-                        const edgeData = selectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
-                        
-                        edges.remove(selectedEdges);
+                // Store data for undo functionality
+                const deletedData = {
+                    type: 'delete_elements',
+                    nodes: selectedNodes.map(nodeId => nodes.get(nodeId)).filter(node => node),
+                    edges: selectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge),
+                    connectedEdges: []
+                };
 
-                        // Update node dependencies
-                        edgeData.forEach(edge => {
+                // Remove selected edges first
+                if (selectedEdges.length > 0) {
+                    console.log('Removing selected edges:', selectedEdges);
+                    
+                    // Get edge data before removal for dependency updates
+                    const edgeData = selectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+                    
+                    edges.remove(selectedEdges);
+
+                    // Update node dependencies
+                    edgeData.forEach(edge => {
+                        const toNode = nodes.get(edge.to);
+                        if (toNode && toNode.nodeData && toNode.nodeData.dependsOn) {
+                            toNode.nodeData.dependsOn = toNode.nodeData.dependsOn.filter(dep => dep !== edge.from);
+                            nodes.update({
+                                id: edge.to,
+                                nodeData: toNode.nodeData
+                            });
+                        }
+                    });
+                }
+
+                // Remove selected nodes and their connected edges
+                if (selectedNodes.length > 0) {
+                    console.log('Removing selected nodes:', selectedNodes);
+                    
+                    const connectedEdges = [];
+                    selectedNodes.forEach(nodeId => {
+                        const nodeEdges = designerNetwork.getConnectedEdges(nodeId);
+                        connectedEdges.push(...nodeEdges);
+                    });
+
+                    // Store connected edges for undo
+                    deletedData.connectedEdges = connectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+
+                    // Get edge data before removal for dependency updates
+                    const connectedEdgeData = connectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+
+                    // Remove connected edges and update dependencies
+                    connectedEdgeData.forEach(edge => {
+                        if (edge && !selectedNodes.includes(edge.to)) {
                             const toNode = nodes.get(edge.to);
                             if (toNode && toNode.nodeData && toNode.nodeData.dependsOn) {
                                 toNode.nodeData.dependsOn = toNode.nodeData.dependsOn.filter(dep => dep !== edge.from);
@@ -2378,59 +3288,36 @@
                                     nodeData: toNode.nodeData
                                 });
                             }
-                        });
-                    }
+                        }
+                    });
 
-                    // Remove selected nodes and their connected edges
-                    if (selectedNodes.length > 0) {
-                        console.log('Removing selected nodes:', selectedNodes);
-                        
-                        const connectedEdges = [];
-                        selectedNodes.forEach(nodeId => {
-                            const nodeEdges = designerNetwork.getConnectedEdges(nodeId);
-                            connectedEdges.push(...nodeEdges);
-                        });
-
-                        // Get edge data before removal for dependency updates
-                        const connectedEdgeData = connectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
-
-                        // Remove connected edges and update dependencies
-                        connectedEdgeData.forEach(edge => {
-                            if (edge && !selectedNodes.includes(edge.to)) {
-                                const toNode = nodes.get(edge.to);
-                                if (toNode && toNode.nodeData && toNode.nodeData.dependsOn) {
-                                    toNode.nodeData.dependsOn = toNode.nodeData.dependsOn.filter(dep => dep !== edge.from);
-                                    nodes.update({
-                                        id: edge.to,
-                                        nodeData: toNode.nodeData
-                                    });
-                                }
+                    edges.remove(connectedEdges);
+                    nodes.remove(selectedNodes);
+                    
+                    // Clean up any connection ports for deleted nodes
+                    selectedNodes.forEach(nodeId => {
+                        if (window.nodePorts && window.nodePorts[nodeId]) {
+                            if (window.nodePorts[nodeId].input) {
+                                window.nodePorts[nodeId].input.remove();
                             }
-                        });
-
-                        edges.remove(connectedEdges);
-                        nodes.remove(selectedNodes);
-                        
-                        // Clean up any connection ports for deleted nodes
-                        selectedNodes.forEach(nodeId => {
-                            if (window.nodePorts && window.nodePorts[nodeId]) {
-                                if (window.nodePorts[nodeId].input) {
-                                    window.nodePorts[nodeId].input.remove();
-                                }
-                                if (window.nodePorts[nodeId].output) {
-                                    window.nodePorts[nodeId].output.remove();
-                                }
-                                delete window.nodePorts[nodeId];
+                            if (window.nodePorts[nodeId].output) {
+                                window.nodePorts[nodeId].output.remove();
                             }
-                        });
-                    }
-
-                    showAlert(`Successfully deleted ${deleteMessage}`, 'success');
-                    console.log('Deletion completed successfully');
+                            delete window.nodePorts[nodeId];
+                        }
+                    });
                 }
+
+                // Add to undo history
+                addToUndoHistory(deletedData);
+
+                showAlert(`Successfully deleted ${deleteMessage}`, 'success');
+                console.log('Deletion completed successfully');
+                deletionInProgress = false;
             } catch (error) {
                 console.error('Error during deletion:', error);
                 showAlert('Error occurred during deletion: ' + error.message, 'error');
+                deletionInProgress = false;
             }
         }
 
@@ -2453,6 +3340,12 @@
 
         // Delete selected nodes
         function deleteSelectedNodes() {
+            // Prevent multiple deletion operations
+            if (deletionInProgress) {
+                console.log('Deletion already in progress, ignoring request');
+                return;
+            }
+            
             if (!designerNetwork) return;
 
             const selectedNodes = designerNetwork.getSelectedNodes();
@@ -2473,24 +3366,38 @@
                 return;
             }
 
-            // Confirm deletion
-            if (confirm(`Delete ${selectedNodes.length} selected node(s)?`)) {
-                const nodes = designerNetwork.body.data.nodes;
-                const edges = designerNetwork.body.data.edges;
+            // Set deletion flag and execute deletion immediately
+            deletionInProgress = true;
+            
+            const nodes = designerNetwork.body.data.nodes;
+            const edges = designerNetwork.body.data.edges;
 
-                // Remove connected edges first
-                const connectedEdges = [];
-                selectedNodes.forEach(nodeId => {
-                    const nodeEdges = designerNetwork.getConnectedEdges(nodeId);
-                    connectedEdges.push(...nodeEdges);
-                });
+            // Store data for undo functionality
+            const deletedData = {
+                type: 'delete_nodes',
+                nodes: selectedNodes.map(nodeId => nodes.get(nodeId)).filter(node => node),
+                connectedEdges: []
+            };
 
-                // Remove edges and nodes
-                edges.remove(connectedEdges);
-                nodes.remove(selectedNodes);
+            // Remove connected edges first
+            const connectedEdges = [];
+            selectedNodes.forEach(nodeId => {
+                const nodeEdges = designerNetwork.getConnectedEdges(nodeId);
+                connectedEdges.push(...nodeEdges);
+            });
 
-                showAlert(`Deleted ${selectedNodes.length} node(s)`, 'success');
-            }
+            // Store connected edges for undo
+            deletedData.connectedEdges = connectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+
+            // Remove edges and nodes
+            edges.remove(connectedEdges);
+            nodes.remove(selectedNodes);
+
+            // Add to undo history
+            addToUndoHistory(deletedData);
+
+            showAlert(`Deleted ${selectedNodes.length} node(s)`, 'success');
+            deletionInProgress = false;
         }
 
         // Edit node configuration (comprehensive modal-based editing)
@@ -2538,6 +3445,7 @@
             if (nodeData.tool) {
                 nodeType = 'tool';
                 document.getElementById('nodeTool').value = nodeData.tool;
+                document.getElementById('nodeToolPrompt').value = nodeData.prompt || '';
             } else if (nodeData.type === 'conditional') {
                 nodeType = 'conditional';
             } else if (nodeData.type === 'input') {
@@ -2642,31 +3550,86 @@
             }
         }
 
+        // Helper functions for form validation feedback
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const existingFeedback = field.parentNode.querySelector('.invalid-feedback');
+            
+            // Add error styling to field
+            field.classList.add('is-invalid');
+            
+            // Remove existing feedback if present
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+            
+            // Add error message
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = message;
+            field.parentNode.appendChild(feedback);
+        }
+
+        function clearFieldError(fieldId) {
+            const field = document.getElementById(fieldId);
+            const existingFeedback = field.parentNode.querySelector('.invalid-feedback');
+            
+            // Remove error styling
+            field.classList.remove('is-invalid');
+            
+            // Remove error message
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+        }
+
+        function clearAllFieldErrors() {
+            const fieldIds = ['nodeId', 'nodePrompt', 'nodeTool', 'nodeToolPrompt', 'nodeDependencies'];
+            fieldIds.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    clearFieldError(fieldId);
+                }
+            });
+        }
+
         // Save node configuration from modal
         function saveNodeConfiguration() {
             if (!currentEditingNodeId || !designerNetwork) return;
+
+            // Clear previous validation errors
+            clearAllFieldErrors();
 
             // Get form values
             const newNodeId = document.getElementById('nodeId').value.trim();
             const nodeType = document.getElementById('nodeType').value;
             const nodePrompt = document.getElementById('nodePrompt').value.trim();
             const nodeTool = document.getElementById('nodeTool').value.trim();
+            const nodeToolPrompt = document.getElementById('nodeToolPrompt').value.trim();
             const nodeDependencies = document.getElementById('nodeDependencies').value.trim();
             const nodeDescription = document.getElementById('nodeDescription').value.trim();
 
-            // Validate required fields
+            let hasErrors = false;
+
+            // Validate required fields with visual feedback
             if (!newNodeId) {
-                showAlert('Node ID is required', 'danger');
-                return;
+                showFieldError('nodeId', 'Node ID is required');
+                hasErrors = true;
             }
 
             if (nodeType === 'prompt' && !nodePrompt) {
-                showAlert('Prompt is required for prompt nodes', 'danger');
-                return;
+                showFieldError('nodePrompt', 'Prompt is required for prompt nodes');
+                hasErrors = true;
             }
 
             if (nodeType === 'tool' && !nodeTool) {
-                showAlert('Tool name is required for tool nodes', 'danger');
+                showFieldError('nodeTool', 'Tool name is required for tool nodes');
+                hasErrors = true;
+            }
+
+            // Show alert for first error and return if any validation failed
+            if (hasErrors) {
+                showAlert('Please fix the highlighted errors before saving', 'danger');
                 return;
             }
 
@@ -2718,7 +3681,7 @@
             // Create updated node data
             const nodeData = {
                 type: nodeType,
-                prompt: nodeType === 'prompt' ? nodePrompt : null,
+                prompt: nodeType === 'prompt' ? nodePrompt : (nodeType === 'tool' ? nodeToolPrompt : null),
                 tool: nodeType === 'tool' ? nodeTool : null,
                 inputSchema: nodeType === 'input' && nodeInputSchema ? nodeInputSchema : null,
                 outputFormat: nodeType === 'output' && nodeOutputFormat ? nodeOutputFormat : null,
@@ -2803,11 +3766,6 @@
 
             nodes.update(updatedNode);
 
-            // Validate graph constraints after node update
-            setTimeout(() => {
-                validateGraphConstraints();
-            }, 100);
-
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('nodeConfigModal'));
             modal.hide();
@@ -2836,6 +3794,11 @@
                     easingFunction: 'easeInOutQuad'
                 }
             });
+
+            // Recalculate port positions after fit animation completes
+            setTimeout(() => {
+                updatePortPositions();
+            }, 600); // Wait for 500ms animation + 100ms buffer
 
             showAlert('View fitted to all nodes', 'success');
         }
@@ -2967,6 +3930,12 @@
 
         // Delete a single node
         function deleteNode(nodeId) {
+            // Prevent multiple deletion operations
+            if (deletionInProgress) {
+                console.log('Deletion already in progress, ignoring request');
+                return;
+            }
+            
             // Prevent deletion of protected INPUT/OUTPUT nodes
             if (nodeId === 'input_node' || nodeId === 'output_node') {
                 const nodeType = nodeId === 'input_node' ? 'INPUT' : 'OUTPUT';
@@ -2974,19 +3943,35 @@
                 return;
             }
             
-            if (confirm(`Delete node ${nodeId}?`)) {
-                const nodes = designerNetwork.body.data.nodes;
-                const edges = designerNetwork.body.data.edges;
+            // Set deletion flag and execute deletion immediately
+            deletionInProgress = true;
+            
+            const nodes = designerNetwork.body.data.nodes;
+            const edges = designerNetwork.body.data.edges;
 
-                // Remove connected edges first
-                const connectedEdges = designerNetwork.getConnectedEdges(nodeId);
-                edges.remove(connectedEdges);
+            // Store data for undo functionality
+            const deletedData = {
+                type: 'delete_single_node',
+                nodes: [nodes.get(nodeId)].filter(node => node),
+                connectedEdges: []
+            };
 
-                // Remove the node
-                nodes.remove(nodeId);
+            // Remove connected edges first
+            const connectedEdges = designerNetwork.getConnectedEdges(nodeId);
+            
+            // Store connected edges for undo
+            deletedData.connectedEdges = connectedEdges.map(edgeId => edges.get(edgeId)).filter(edge => edge);
+            
+            edges.remove(connectedEdges);
 
-                showAlert(`Deleted node ${nodeId}`, 'success');
-            }
+            // Remove the node
+            nodes.remove(nodeId);
+
+            // Add to undo history
+            addToUndoHistory(deletedData);
+
+            showAlert(`Deleted node ${nodeId}`, 'success');
+            deletionInProgress = false;
         }
 
         // Enhanced connection mode toggle with better UX
@@ -3030,7 +4015,7 @@
 
         // Validate comprehensive graph constraints
         function validateGraphConstraints() {
-            if (!designerNetwork) return true;
+            if (!designerNetwork) return { isValid: true, messages: [] };
 
             const nodes = designerNetwork.body.data.nodes;
             const edges = designerNetwork.body.data.edges;
@@ -3109,11 +4094,13 @@
                 }
             }
             
-            if (!isValid) {
-                showAlert(messages.join('<br>'), 'error');
+            // Rule 6: Graph must not contain cycles
+            if (hasCycles(allNodes, allEdges)) {
+                messages.push('Graph contains cycles which are not allowed');
+                isValid = false;
             }
             
-            return isValid;
+            return { isValid, messages };
         }
         
         // Helper function to check if there's a path between two nodes
@@ -3142,8 +4129,68 @@
             
             return false;
         }
+        
+        // Helper function to detect cycles in the graph using DFS
+        function hasCycles(nodes, edges) {
+            // Create adjacency list representation
+            const adjacencyList = {};
+            nodes.forEach(node => {
+                adjacencyList[node.id] = [];
+            });
+            
+            edges.forEach(edge => {
+                if (adjacencyList[edge.from]) {
+                    adjacencyList[edge.from].push(edge.to);
+                }
+            });
+            
+            // Track node states: 0 = unvisited, 1 = visiting, 2 = visited
+            const nodeStates = {};
+            nodes.forEach(node => {
+                nodeStates[node.id] = 0;
+            });
+            
+            // DFS function to detect cycles
+            function dfsHasCycle(nodeId) {
+                if (nodeStates[nodeId] === 1) {
+                    // Found a back edge - cycle detected
+                    return true;
+                }
+                
+                if (nodeStates[nodeId] === 2) {
+                    // Already fully processed
+                    return false;
+                }
+                
+                // Mark as visiting
+                nodeStates[nodeId] = 1;
+                
+                // Check all neighbors
+                const neighbors = adjacencyList[nodeId] || [];
+                for (const neighbor of neighbors) {
+                    if (dfsHasCycle(neighbor)) {
+                        return true;
+                    }
+                }
+                
+                // Mark as visited
+                nodeStates[nodeId] = 2;
+                return false;
+            }
+            
+            // Check for cycles starting from each unvisited node
+            for (const node of nodes) {
+                if (nodeStates[node.id] === 0) {
+                    if (dfsHasCycle(node.id)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
 
-        // Auto arrange nodes using clean layout algorithms
+        // Auto arrange nodes using intelligent hierarchical layout
         function autoArrangeNodes() {
             if (!designerNetwork) {
                 showAlert('No graph to arrange', 'warning');
@@ -3151,57 +4198,154 @@
             }
 
             const nodes = designerNetwork.body.data.nodes;
-            const nodeIds = nodes.getIds();
-            if (nodeIds.length === 0) {
+            const edges = designerNetwork.body.data.edges;
+            const allNodes = nodes.get();
+            const allEdges = edges.get();
+            
+            if (allNodes.length === 0) {
                 showAlert('No nodes to arrange', 'warning');
                 return;
             }
 
-            // Get all nodes and arrange them in a clean grid or flow layout
-            const nodePositions = {};
-            
-            // Simple grid arrangement - no physics, no movement restrictions
-            const gridSize = Math.ceil(Math.sqrt(nodeIds.length));
-            const spacing = 200; // Space between nodes
-            const startX = -(gridSize - 1) * spacing / 2;
-            const startY = -(gridSize - 1) * spacing / 2;
-            
-            nodeIds.forEach((nodeId, index) => {
-                const row = Math.floor(index / gridSize);
-                const col = index % gridSize;
-                nodePositions[nodeId] = {
-                    x: startX + col * spacing,
-                    y: startY + row * spacing
-                };
-            });
-
-            // Apply positions without enabling physics or hierarchical constraints
-            designerNetwork.setOptions({
-                layout: {
-                    hierarchical: false
-                },
-                physics: {
-                    enabled: false // Keep physics disabled for clean behavior
-                }
-            });
-
-            // Set node positions using vis.js DataSet update method
-            const nodesToUpdate = [];
-            for (const nodeId in nodePositions) {
-                nodesToUpdate.push({
-                    id: nodeId,
-                    x: nodePositions[nodeId].x,
-                    y: nodePositions[nodeId].y
+            try {
+                // Create a hierarchical layout based on graph topology
+                const nodePositions = calculateHierarchicalLayout(allNodes, allEdges);
+                
+                // Apply the new layout
+                designerNetwork.setOptions({
+                    layout: {
+                        hierarchical: false
+                    },
+                    physics: {
+                        enabled: false // Keep physics disabled for clean behavior
+                    }
                 });
-            }
-            nodes.update(nodesToUpdate);
-            
-            showAlert('Nodes arranged in clean grid layout', 'success');
 
-            // Fit view after arrangement
-            setTimeout(() => {
-                fitDesignerToView();
-            }, 500);
+                // Update node positions
+                const nodesToUpdate = [];
+                for (const nodeId in nodePositions) {
+                    nodesToUpdate.push({
+                        id: nodeId,
+                        x: nodePositions[nodeId].x,
+                        y: nodePositions[nodeId].y
+                    });
+                }
+                nodes.update(nodesToUpdate);
+                
+                // Recalculate port positions after arranging nodes
+                setTimeout(() => {
+                    updatePortPositions();
+                }, 100);
+                
+                showAlert('Nodes arranged in hierarchical flow layout', 'success');
+
+                // Fit view after arrangement
+                setTimeout(() => {
+                    fitDesignerToView();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error during auto-arrange:', error);
+                showAlert('Error arranging nodes: ' + error.message, 'error');
+            }
+        }
+        
+        // Calculate hierarchical layout positions to minimize edge overlaps
+        function calculateHierarchicalLayout(nodes, edges) {
+            const nodePositions = {};
+            const layers = [];
+            const visited = new Set();
+            const inDegree = {};
+            const outDegree = {};
+            
+            // Initialize degree counts
+            nodes.forEach(node => {
+                inDegree[node.id] = 0;
+                outDegree[node.id] = 0;
+            });
+            
+            // Calculate in-degree and out-degree for each node
+            edges.forEach(edge => {
+                if (inDegree[edge.to] !== undefined) inDegree[edge.to]++;
+                if (outDegree[edge.from] !== undefined) outDegree[edge.from]++;
+            });
+            
+            // Find input nodes (nodes with no incoming edges) for the first layer
+            let currentLayer = nodes.filter(node => inDegree[node.id] === 0);
+            if (currentLayer.length === 0) {
+                // If no nodes with zero in-degree (cyclic graph), start with input_node or first node
+                const inputNode = nodes.find(node => node.id === 'input_node');
+                currentLayer = inputNode ? [inputNode] : [nodes[0]];
+            }
+            
+            // Build layers using topological-like sorting
+            while (currentLayer.length > 0 && visited.size < nodes.length) {
+                const layer = [...currentLayer];
+                layers.push(layer);
+                
+                // Mark current layer nodes as visited
+                layer.forEach(node => visited.add(node.id));
+                
+                // Find next layer: nodes that have all their dependencies satisfied
+                const nextLayer = [];
+                nodes.forEach(node => {
+                    if (visited.has(node.id)) return;
+                    
+                    // Check if all dependencies (incoming edges) are satisfied
+                    const dependencies = edges.filter(edge => edge.to === node.id);
+                    const satisfiedDeps = dependencies.filter(edge => visited.has(edge.from));
+                    
+                    if (dependencies.length === 0 || satisfiedDeps.length === dependencies.length) {
+                        nextLayer.push(node);
+                    }
+                });
+                
+                currentLayer = nextLayer;
+                
+                // Prevent infinite loops
+                if (layers.length > nodes.length) break;
+            }
+            
+            // Add any remaining unvisited nodes to the last layer
+            const unvisited = nodes.filter(node => !visited.has(node.id));
+            if (unvisited.length > 0) {
+                layers.push(unvisited);
+            }
+            
+            // Calculate positions for each layer
+            const layerSpacing = 300; // Horizontal spacing between layers
+            const nodeSpacing = 150;  // Vertical spacing between nodes in same layer
+            const startX = -(layers.length - 1) * layerSpacing / 2;
+            
+            layers.forEach((layer, layerIndex) => {
+                const layerX = startX + layerIndex * layerSpacing;
+                const startY = -(layer.length - 1) * nodeSpacing / 2;
+                
+                // Sort layer nodes for better visual flow
+                layer.sort((a, b) => {
+                    // Prioritize input/output nodes
+                    if (a.id === 'input_node') return -1;
+                    if (b.id === 'input_node') return 1;
+                    if (a.id === 'output_node') return 1;
+                    if (b.id === 'output_node') return -1;
+                    
+                    // Sort by node type for consistency
+                    const typeOrder = { 'input': 0, 'prompt': 1, 'tool': 2, 'conditional': 3, 'output': 4 };
+                    const aType = a.nodeData?.type || 'prompt';
+                    const bType = b.nodeData?.type || 'prompt';
+                    
+                    return (typeOrder[aType] || 1) - (typeOrder[bType] || 1);
+                });
+                
+                layer.forEach((node, nodeIndex) => {
+                    nodePositions[node.id] = {
+                        x: layerX,
+                        y: startY + nodeIndex * nodeSpacing
+                    };
+                });
+            });
+            
+            return nodePositions;
         }
 
         // Load templates
@@ -3470,18 +4614,18 @@
         async function validateGraph() {
             try {
                 // Call the comprehensive client-side validation function
-                const isValid = validateGraphConstraints();
+                const validationResult = validateGraphConstraints();
                 
                 // Create result object for display
                 const result = {
-                    valid: isValid,
-                    message: isValid ? 'Graph validation passed! All rules are satisfied.' : 'Graph validation failed. Please check the errors above.',
-                    errors: isValid ? [] : ['See detailed error messages in the alert above']
+                    valid: validationResult.isValid,
+                    message: validationResult.isValid ? 'Graph validation passed! All rules are satisfied.' : 'Graph validation failed. Please review the errors below.',
+                    errors: validationResult.isValid ? [] : validationResult.messages
                 };
                 
                 displayValidationResults(result);
                 
-                if (isValid) {
+                if (validationResult.isValid) {
                     showAlert('✅ Graph validation passed! All rules are satisfied.', 'success');
                 }
 
@@ -3543,9 +4687,20 @@
                 const networkNodes = designerNetwork.body.data.nodes.get();
                 networkNodes.forEach(node => {
                     const nodeData = node.nodeData || {};
+                    
+                    // For tool nodes, don't generate default prompts if none is set
+                    let prompt = nodeData.prompt;
+                    if (!prompt && nodeData.tool) {
+                        // Tool nodes without explicit prompts should have null prompt
+                        prompt = null;
+                    } else if (!prompt) {
+                        // Non-tool nodes can have default prompts
+                        prompt = node.label + ' prompt';
+                    }
+                    
                     nodes.push({
                         nodeId: node.id,
-                        prompt: nodeData.prompt || (node.label + ' prompt'),
+                        prompt: prompt,
                         tool: nodeData.tool || null,
                         dependsOn: [],
                         conditional: nodeData.conditional || null
@@ -3757,140 +4912,323 @@
             container.innerHTML = html;
         }
 
-        // Toast notification system - no layout shifts
-        let toastContainer = null;
-        let toastQueue = [];
-        let activeToasts = [];
+        // Modern Notification Center System
+        let notifications = [];
+        let unreadCount = 0;
+        let notificationId = 0;
+        let notificationFilter = 'all'; // Current filter: 'all', 'success', 'danger', 'warning', 'info'
 
-        function initializeToastSystem() {
-            if (!toastContainer) {
-                toastContainer = document.createElement('div');
-                toastContainer.id = 'toast-container';
-                toastContainer.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    z-index: 9999;
-                    max-width: 350px;
-                    pointer-events: none;
-                `;
-                document.body.appendChild(toastContainer);
-            }
+        function initializeNotificationCenter() {
+            // Event listeners for notification center
+            document.getElementById('notificationToggle').addEventListener('click', toggleNotificationDropdown);
+            document.getElementById('clearAllNotifications').addEventListener('click', clearAllNotifications);
+            
+            // Event listeners for notification filters
+            document.querySelectorAll('.notification-filter').forEach(button => {
+                button.addEventListener('click', function() {
+                    const filterType = this.dataset.type;
+                    setNotificationFilter(filterType);
+                });
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const container = document.querySelector('.notification-center-container');
+                if (!container.contains(event.target)) {
+                    closeNotificationDropdown();
+                }
+            });
+        }
+
+        function setNotificationFilter(filterType) {
+            notificationFilter = filterType;
+            
+            // Update active filter button
+            document.querySelectorAll('.notification-filter').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${filterType}"]`).classList.add('active');
+            
+            // Update notification list with new filter
+            updateNotificationList();
         }
 
         function showAlert(message, type = 'info', duration = 4000) {
-            // Reduce notification spam for connection operations
-            if (message.includes('Connected') || message.includes('Deleted') || message.includes('Added')) {
-                duration = 2000; // Shorter duration for action confirmations
-            }
-
-            initializeToastSystem();
-
-            const toast = createToast(message, type, duration);
-            toastQueue.push(toast);
-            processToastQueue();
+            // Add notification to the notification center
+            addNotification(message, type);
         }
 
-        function createToast(message, type, duration) {
-            const toast = document.createElement('div');
-            const toastId = 'toast_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            toast.id = toastId;
-
-            // Map alert types to toast styles
-            const typeStyles = {
-                'success': { bg: '#d4edda', border: '#c3e6cb', text: '#155724', icon: 'fas fa-check-circle' },
-                'danger': { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24', icon: 'fas fa-exclamation-triangle' },
-                'warning': { bg: '#fff3cd', border: '#ffeaa7', text: '#856404', icon: 'fas fa-exclamation-circle' },
-                'info': { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460', icon: 'fas fa-info-circle' }
+        function addNotification(message, type = 'info') {
+            const notification = {
+                id: ++notificationId,
+                message: message,
+                type: type,
+                timestamp: new Date(),
+                unread: true
             };
 
-            const style = typeStyles[type] || typeStyles['info'];
+            notifications.unshift(notification); // Add to beginning
+            unreadCount++;
+            
+            // Limit notifications to prevent memory issues
+            if (notifications.length > 50) {
+                notifications = notifications.slice(0, 50);
+            }
 
-            toast.style.cssText = `
-                background: ${style.bg};
-                border: 1px solid ${style.border};
-                color: ${style.text};
-                border-radius: 8px;
-                padding: 12px 16px;
-                margin-bottom: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                pointer-events: auto;
-                transform: translateX(100%);
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                opacity: 0;
-                display: flex;
-                align-items: center;
-                font-size: 14px;
-                line-height: 1.4;
-                max-width: 100%;
-                word-wrap: break-word;
-            `;
-
-            toast.innerHTML = `
-                <i class="${style.icon}" style="margin-right: 8px; flex-shrink: 0;"></i>
-                <span style="flex: 1;">${message}</span>
-                <button type="button" style="
-                    background: none;
-                    border: none;
-                    color: ${style.text};
-                    font-size: 16px;
-                    cursor: pointer;
-                    padding: 0;
-                    margin-left: 8px;
-                    opacity: 0.7;
-                    transition: opacity 0.2s;
-                " onclick="dismissToast('${toastId}')">&times;</button>
-            `;
-
-            // Add hover effects to close button
-            const closeBtn = toast.querySelector('button');
-            closeBtn.addEventListener('mouseenter', () => closeBtn.style.opacity = '1');
-            closeBtn.addEventListener('mouseleave', () => closeBtn.style.opacity = '0.7');
-
-            return { element: toast, duration, id: toastId };
+            updateNotificationBadge();
+            updateNotificationList();
         }
 
-        function processToastQueue() {
-            if (toastQueue.length === 0 || activeToasts.length >= 5) return;
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            const isVisible = dropdown.style.display !== 'none';
+            
+            if (isVisible) {
+                closeNotificationDropdown();
+            } else {
+                openNotificationDropdown();
+            }
+        }
 
-            const toast = toastQueue.shift();
-            activeToasts.push(toast);
+        function openNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.style.display = 'block';
+            
+            // Mark all notifications as read when opening
+            markAllAsRead();
+        }
 
-            toastContainer.appendChild(toast.element);
+        function closeNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.style.display = 'none';
+        }
 
-            // Animate in
-            requestAnimationFrame(() => {
-                toast.element.style.transform = 'translateX(0)';
-                toast.element.style.opacity = '1';
+        function markAllAsRead() {
+            notifications.forEach(notification => {
+                notification.unread = false;
+            });
+            unreadCount = 0;
+            updateNotificationBadge();
+            updateNotificationList();
+        }
+
+        function clearAllNotifications() {
+            notifications = [];
+            unreadCount = 0;
+            updateNotificationBadge();
+            updateNotificationList();
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 99 ? '99+' : unreadCount.toString();
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateNotificationList() {
+            const list = document.getElementById('notificationList');
+            
+            // Filter notifications based on current filter
+            const filteredNotifications = notificationFilter === 'all' 
+                ? notifications 
+                : notifications.filter(notification => notification.type === notificationFilter);
+            
+            if (filteredNotifications.length === 0) {
+                const filterText = notificationFilter === 'all' ? 'notifications' : `${notificationFilter} notifications`;
+                list.innerHTML = `
+                    <div class="no-notifications text-muted text-center py-3">
+                        <i class="fas fa-bell-slash mb-2"></i>
+                        <p class="mb-0">No ${filterText}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = filteredNotifications.map(notification => {
+                const iconMap = {
+                    'success': 'fas fa-check-circle',
+                    'danger': 'fas fa-exclamation-triangle',
+                    'warning': 'fas fa-exclamation-circle',
+                    'info': 'fas fa-info-circle'
+                };
+
+                const timeAgo = getTimeAgo(notification.timestamp);
+                
+                return `
+                    <div class="notification-item ${notification.unread ? 'unread' : ''}" data-id="${notification.id}">
+                        <div class="notification-content">
+                            <div class="notification-icon ${notification.type}">
+                                <i class="${iconMap[notification.type] || iconMap['info']}"></i>
+                            </div>
+                            <div class="notification-text">
+                                ${notification.message}
+                                <div class="notification-time">${timeAgo}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.innerHTML = html;
+        }
+
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const diff = now - timestamp;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            if (days > 0) return `${days}d ago`;
+            if (hours > 0) return `${hours}h ago`;
+            if (minutes > 0) return `${minutes}m ago`;
+            return 'Just now';
+        }
+
+        // Resizable Panes System
+        let isResizing = false;
+        let currentResizeHandle = null;
+        let startX = 0;
+        let startWidth = 0;
+        let containerWidth = 0;
+
+        function initializeResizablePanes() {
+            // Add event listeners to all resize handles
+            document.querySelectorAll('.resize-handle').forEach(handle => {
+                handle.addEventListener('mousedown', startResize);
             });
 
-            // Auto-dismiss
-            setTimeout(() => {
-                dismissToast(toast.id);
-            }, toast.duration);
-
-            // Process next toast
-            setTimeout(() => processToastQueue(), 100);
+            // Global mouse events for resizing
+            document.addEventListener('mousemove', handleResize);
+            document.addEventListener('mouseup', stopResize);
         }
 
-        function dismissToast(toastId) {
-            const toastIndex = activeToasts.findIndex(t => t.id === toastId);
-            if (toastIndex === -1) return;
+        function startResize(e) {
+            e.preventDefault();
+            isResizing = true;
+            currentResizeHandle = e.target;
+            startX = e.clientX;
 
-            const toast = activeToasts[toastIndex];
+            const pane = currentResizeHandle.parentElement;
+            const container = pane.parentElement;
+            
+            startWidth = pane.offsetWidth;
+            containerWidth = container.offsetWidth;
 
-            // Animate out
-            toast.element.style.transform = 'translateX(100%)';
-            toast.element.style.opacity = '0';
+            // Add visual feedback
+            currentResizeHandle.classList.add('dragging');
+            pane.classList.add('resizing');
+            
+            // Disable text selection during resize
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+        }
 
-            setTimeout(() => {
-                if (toast.element.parentNode) {
-                    toast.element.remove();
+        function handleResize(e) {
+            if (!isResizing || !currentResizeHandle) return;
+
+            e.preventDefault();
+            const deltaX = e.clientX - startX;
+            const pane = currentResizeHandle.parentElement;
+            const container = pane.parentElement;
+            const target = currentResizeHandle.dataset.target;
+
+            let newWidth = startWidth + deltaX;
+            
+            // Apply constraints based on pane type
+            if (pane.classList.contains('left-pane') || pane.classList.contains('side-pane')) {
+                const minWidth = parseInt(getComputedStyle(pane).minWidth) || 150;
+                
+                // Handle max-width properly - check if it's a percentage or pixel value
+                const maxWidthStyle = getComputedStyle(pane).maxWidth;
+                let maxWidth;
+                if (maxWidthStyle.includes('%')) {
+                    // Convert percentage to pixels
+                    const maxWidthPercent = parseFloat(maxWidthStyle);
+                    maxWidth = (containerWidth * maxWidthPercent) / 100;
+                } else if (maxWidthStyle === 'none') {
+                    // No max-width constraint
+                    maxWidth = containerWidth * 0.8; // Default to 80% of container
+                } else {
+                    // Pixel value
+                    maxWidth = parseInt(maxWidthStyle) || containerWidth * 0.5;
                 }
-                activeToasts.splice(toastIndex, 1);
-                processToastQueue(); // Process any queued toasts
-            }, 300);
+                
+                newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+            }
+
+            // Convert to percentage for responsive behavior
+            const newWidthPercent = (newWidth / containerWidth) * 100;
+            pane.style.width = `${newWidthPercent}%`;
+
+            // Handle three-pane layout adjustments
+            if (container.classList.contains('three-pane-container')) {
+                adjustThreePaneLayout(container, pane, target);
+            }
+
+            // Trigger resize events for vis.js networks
+            setTimeout(() => {
+                if (graphNetwork) graphNetwork.redraw();
+                if (designerNetwork) designerNetwork.redraw();
+            }, 50);
         }
+
+        function adjustThreePaneLayout(container, resizedPane, target) {
+            const panes = container.querySelectorAll('.resizable-pane');
+            const leftPane = panes[0];
+            const centerPane = panes[1];
+            const rightPane = panes[2];
+
+            const leftWidth = (leftPane.offsetWidth / container.offsetWidth) * 100;
+            const rightWidth = (rightPane.offsetWidth / container.offsetWidth) * 100;
+            const centerWidth = 100 - leftWidth - rightWidth;
+
+            // Ensure center pane doesn't get too small
+            if (centerWidth < 30) {
+                if (target === 'creator-left') {
+                    leftPane.style.width = `${70 - rightWidth}%`;
+                } else if (target === 'creator-right') {
+                    rightPane.style.width = `${70 - leftWidth}%`;
+                }
+            }
+        }
+
+        function stopResize() {
+            if (!isResizing) return;
+
+            isResizing = false;
+            
+            // Remove visual feedback
+            if (currentResizeHandle) {
+                currentResizeHandle.classList.remove('dragging');
+                const pane = currentResizeHandle.parentElement;
+                pane.classList.remove('resizing');
+            }
+
+            currentResizeHandle = null;
+            
+            // Restore normal cursor and text selection
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+
+            // Final network redraw
+            setTimeout(() => {
+                if (graphNetwork) {
+                    graphNetwork.fit();
+                    graphNetwork.redraw();
+                }
+                if (designerNetwork) {
+                    designerNetwork.fit();
+                    designerNetwork.redraw();
+                }
+            }, 100);
+        }
+
 
         // Enhanced connection feedback - reduce notification spam
         function showConnectionFeedback(message, type = 'info') {
