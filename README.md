@@ -107,6 +107,72 @@ public class GreetingAgent implements Agent {
 }
 ```
 
+### 3b. Or Define Agents with YAML (No Code!)
+
+For simple to moderately complex agents, you can define them entirely in YAML — no Java code required:
+
+**`src/main/resources/agents/customer-support.yaml`**:
+
+```yaml
+name: customer-support
+description: Handles customer inquiries with sentiment analysis
+
+workflows:
+  - name: support-flow
+    description: Analyze sentiment and generate response
+    
+    nodes:
+      - id: input
+        type: input
+        
+      - id: analyze-sentiment
+        type: llm
+        prompt: |
+          Analyze the sentiment of: {input}
+          Respond with: positive, negative, or neutral
+        systemPrompt: You are a sentiment analyzer.
+        
+      - id: generate-response
+        type: llm
+        prompt: |
+          Sentiment: {analyze-sentiment}
+          Customer message: {input}
+          Generate a helpful response.
+        systemPrompt: You are a friendly support agent.
+        
+      - id: output
+        type: output
+        
+    edges:
+      - from: input
+        to: analyze-sentiment
+      - from: input
+        to: generate-response
+      - from: analyze-sentiment
+        to: generate-response
+      - from: generate-response
+        to: output
+```
+
+YAML agents are automatically discovered from `classpath:agents/*.yaml` at startup.
+
+**Supported node types:**
+- `input` — Entry point for user input
+- `output` — Final output node
+- `llm` — LLM call with `prompt` and optional `systemPrompt`
+- `rest` — HTTP call with `method`, `url`, `body`, `headers`
+- `tool` — Tool/function call with `toolName` and `toolArgs`
+- `context` — Set context variables with `contextKey` and `contextValue`
+
+**Error handling:**
+```yaml
+- id: risky-node
+  type: llm
+  prompt: "..."
+  errorStrategy: CONTINUE_WITH_DEFAULT  # or FAIL_FAST, SKIP
+  defaultValue: "Fallback response"
+```
+
 ### 4. Configure
 
 `application.yml`:

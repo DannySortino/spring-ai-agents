@@ -1,0 +1,50 @@
+# Customer Support Agent - No Code Required!
+# This agent is automatically discovered and registered at startup.
+
+name: customer-support
+description: Handles customer inquiries with sentiment analysis and appropriate responses
+
+workflows:
+  - name: support-flow
+    description: Analyze customer sentiment and generate appropriate response
+    
+    nodes:
+      - id: input
+        type: input
+        
+      - id: analyze-sentiment
+        type: llm
+        prompt: |
+          Analyze the sentiment of the following customer message.
+          Respond with exactly one word: positive, negative, or neutral.
+          
+          Customer message: {input}
+        systemPrompt: You are a sentiment analysis expert. Be concise and accurate.
+        
+      - id: generate-response
+        type: llm
+        prompt: |
+          You are responding to a customer inquiry.
+          The customer's sentiment has been analyzed as: {analyze-sentiment}
+          
+          Original customer message: {input}
+          
+          Generate a helpful, empathetic response appropriate for their sentiment.
+        systemPrompt: |
+          You are a friendly and professional customer support representative.
+          For negative sentiment: Be extra empathetic and offer solutions.
+          For positive sentiment: Match their enthusiasm and thank them.
+          For neutral sentiment: Be helpful and informative.
+          
+      - id: output
+        type: output
+        
+    edges:
+      - from: input
+        to: analyze-sentiment
+      - from: input
+        to: generate-response
+      - from: analyze-sentiment
+        to: generate-response
+      - from: generate-response
+        to: output

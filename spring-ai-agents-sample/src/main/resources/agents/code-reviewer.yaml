@@ -1,0 +1,90 @@
+# Code Review Agent - Declarative Definition
+# Demonstrates a multi-step analysis workflow
+
+name: code-reviewer
+description: Reviews code for bugs, security issues, and best practices
+
+workflows:
+  - name: review-flow
+    description: Comprehensive code review workflow
+    
+    nodes:
+      - id: input
+        type: input
+        
+      - id: check-bugs
+        type: llm
+        prompt: |
+          Review the following code for potential bugs and logic errors.
+          Be specific about line numbers and issues found.
+          
+          Code:
+          {input}
+        systemPrompt: You are an expert code reviewer focused on bug detection.
+        errorStrategy: CONTINUE_WITH_DEFAULT
+        defaultValue: "Bug analysis unavailable"
+        
+      - id: check-security
+        type: llm
+        prompt: |
+          Review the following code for security vulnerabilities.
+          Check for: SQL injection, XSS, CSRF, hardcoded secrets, etc.
+          
+          Code:
+          {input}
+        systemPrompt: You are a security expert reviewing code for vulnerabilities.
+        errorStrategy: CONTINUE_WITH_DEFAULT
+        defaultValue: "Security analysis unavailable"
+        
+      - id: check-style
+        type: llm
+        prompt: |
+          Review the following code for style and best practices.
+          Consider: naming conventions, code organization, DRY principle.
+          
+          Code:
+          {input}
+        systemPrompt: You are a senior developer focused on code quality and maintainability.
+        errorStrategy: CONTINUE_WITH_DEFAULT
+        defaultValue: "Style analysis unavailable"
+        
+      - id: summarize
+        type: llm
+        prompt: |
+          Compile the following code review findings into a comprehensive report:
+          
+          ## Bug Analysis
+          {check-bugs}
+          
+          ## Security Review
+          {check-security}
+          
+          ## Style & Best Practices
+          {check-style}
+          
+          Create a prioritized summary with actionable recommendations.
+        systemPrompt: |
+          You are a technical lead creating a code review summary.
+          Prioritize issues by severity: Critical > High > Medium > Low.
+          Be constructive and provide specific suggestions.
+          
+      - id: output
+        type: output
+        
+    edges:
+      # Parallel analysis branches
+      - from: input
+        to: check-bugs
+      - from: input
+        to: check-security
+      - from: input
+        to: check-style
+      # Converge to summary
+      - from: check-bugs
+        to: summarize
+      - from: check-security
+        to: summarize
+      - from: check-style
+        to: summarize
+      - from: summarize
+        to: output

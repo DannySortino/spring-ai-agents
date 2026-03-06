@@ -1,2 +1,2 @@
 com.springai.agents.autoconfigure.AgentsAutoConfiguration
-
+com.springai.agents.yaml.YamlAgentAutoConfiguration
