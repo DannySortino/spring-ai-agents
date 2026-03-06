@@ -3,9 +3,15 @@ package com.springai.agents.executor;
 import com.springai.agents.node.LlmNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static reactor.core.scheduler.Schedulers.boundedElastic;
 
@@ -14,7 +20,9 @@ import static reactor.core.scheduler.Schedulers.boundedElastic;
  * <p>
  * The prompt template is interpolated with {@code {nodeId}} placeholders replaced by
  * dependency outputs and {@code {input}} replaced by the raw user input. If the node
- * has a {@code systemPrompt}, it is prepended to the final prompt.
+ * has a {@code systemPrompt}, it is sent as a proper system message to the LLM.
+ * <p>
+ * Usage metadata (input/output tokens) is logged when available.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -24,9 +32,25 @@ public class LlmExecutor implements NodeExecutor<LlmNode>, ReactiveNodeExecutor<
 
     @Override
     public Object execute(LlmNode node, NodeContext context) {
-        String processedPrompt = buildPrompt(node, context);
-        log.debug("LlmNode '{}': calling LLM with prompt length={}", node.getId(), processedPrompt.length());
-        return chatModel.call(new Prompt(processedPrompt)).getResult().getOutput().getText();
+        Prompt prompt = buildPrompt(node, context);
+        log.debug("LlmNode '{}': calling LLM with {} message(s)", node.getId(), prompt.getInstructions().size());
+        
+        ChatResponse response = chatModel.call(prompt);
+        
+        // Log usage metadata if available
+        if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
+            var usage = response.getMetadata().getUsage();
+            log.debug("LlmNode '{}': tokens used — input={}, output={}, total={}",
+                    node.getId(),
+                    usage.getPromptTokens(),
+                    usage.getCompletionTokens(),
+                    usage.getTotalTokens());
+            
+            // Store usage in execution context for downstream access
+            context.getExecutionContext().put(node.getId() + "_usage", usage);
+        }
+        
+        return response.getResult().getOutput().getText();
     }
 
     @Override
@@ -40,13 +64,24 @@ public class LlmExecutor implements NodeExecutor<LlmNode>, ReactiveNodeExecutor<
         return LlmNode.class;
     }
 
-    private String buildPrompt(LlmNode node, NodeContext context) {
-        String prompt = PromptInterpolator.interpolate(
+    /**
+     * Build a proper Prompt with system and user messages.
+     * Uses Spring AI's message types instead of string concatenation.
+     */
+    private Prompt buildPrompt(LlmNode node, NodeContext context) {
+        String userPrompt = PromptInterpolator.interpolate(
                 node.getPromptTemplate(), context.getDependencyResults(), context.getExecutionContext());
 
+        List<org.springframework.ai.chat.messages.Message> messages = new ArrayList<>();
+        
+        // Add system message if present
         if (node.getSystemPrompt() != null && !node.getSystemPrompt().isBlank()) {
-            prompt = node.getSystemPrompt() + "\n\n" + prompt;
+            messages.add(new SystemMessage(node.getSystemPrompt()));
         }
-        return prompt;
+        
+        // Add user message
+        messages.add(new UserMessage(userPrompt));
+        
+        return new Prompt(messages);
     }
 }

@@ -125,15 +125,27 @@ public class AgentsAutoConfiguration {
 
     // ── Workflow Executors ──────────────────────────────────────────────
 
-    @Bean
-    @ConditionalOnMissingBean
+    @Bean(destroyMethod = "shutdown")
+    @ConditionalOnMissingBean(name = "workflowThreadPool")
     @ConditionalOnProperty(name = "spring.ai.agents.reactive", havingValue = "false", matchIfMissing = true)
-    public WorkflowExecutor workflowExecutor(NodeExecutorRegistry executorRegistry, AgentsProperties properties,
-                                             Optional<ApplicationEventPublisher> eventPublisher) {
+    public ExecutorService workflowThreadPool(AgentsProperties properties) {
         ExecutorService threadPool = properties.getParallelThreads() > 0
                 ? Executors.newFixedThreadPool(properties.getParallelThreads())
                 : Executors.newCachedThreadPool();
-        return new WorkflowExecutor(executorRegistry, threadPool, eventPublisher.orElse(null));
+        log.info("Created workflow thread pool: {}", 
+                properties.getParallelThreads() > 0 
+                    ? "fixed(" + properties.getParallelThreads() + ")" 
+                    : "cached");
+        return threadPool;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = "spring.ai.agents.reactive", havingValue = "false", matchIfMissing = true)
+    public WorkflowExecutor workflowExecutor(NodeExecutorRegistry executorRegistry, 
+                                             ExecutorService workflowThreadPool,
+                                             Optional<ApplicationEventPublisher> eventPublisher) {
+        return new WorkflowExecutor(executorRegistry, workflowThreadPool, eventPublisher.orElse(null));
     }
 
     @Bean
