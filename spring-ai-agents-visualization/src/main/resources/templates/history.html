@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page('Execution History', 'history', ~{::content})}">
+<body>
+<div th:fragment="content">
+    <div class="page-header">
+        <h2>Execution History</h2>
+        <p>Browse and search past workflow executions</p>
+    </div>
+
+    <div class="filter-bar" id="filter-bar">
+        <input type="text" id="filter-query" placeholder="Search input/output..." style="min-width:250px;"/>
+        <select id="filter-agent">
+            <option value="">All agents</option>
+        </select>
+        <select id="filter-status">
+            <option value="">All statuses</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="RUNNING">Running</option>
+            <option value="FAILED">Failed</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadHistory()">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M1.643 3.143.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684ZM7.75 4a.75.75 0 0 1 .75.75v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5A.75.75 0 0 1 7.75 4Z"/></svg>
+            Refresh
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear All</button>
+    </div>
+
+    <div id="history-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Agent</th>
+                    <th>Workflow</th>
+                    <th>Input</th>
+                    <th>Duration</th>
+                    <th>Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="history-tbody">
+                <tr><td colspan="7" class="empty-state" style="padding:40px;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Detail modal / expanded row -->
+    <div id="history-detail" class="exec-panel" style="display:none;margin-top:16px;">
+        <h3>Execution Detail</h3>
+        <div id="history-detail-content"></div>
+    </div>
+
+    <script th:src="@{/agents-ui/js/history-table.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            populateAgentFilter();
+            loadHistory();
+        });
+    </script>
+</div>
+</body>
+</html>
+

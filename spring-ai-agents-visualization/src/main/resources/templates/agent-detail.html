@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page('Agent: ' + ${agent.name}, 'dashboard', ~{::content})}">
+<body>
+<div th:fragment="content">
+    <div class="page-header">
+        <h2>
+            <a th:href="@{/agents-ui/}" style="color:var(--text-muted);text-decoration:none;">&larr;</a>
+            <span th:text="${agent.name}" style="font-family:var(--font-mono)">agent-name</span>
+            <span class="badge badge-purple" th:if="${agent.multiWorkflow}">Multi-Workflow</span>
+        </h2>
+        <p th:text="${agent.description}">Agent description</p>
+    </div>
+
+    <!-- Workflow tabs for multi-workflow agents -->
+    <div class="workflow-tabs" th:if="${agent.multiWorkflow}" id="workflow-tabs">
+        <button th:each="wf, iter : ${agent.workflows}"
+                class="workflow-tab"
+                th:classappend="${iter.index == 0} ? 'active'"
+                th:text="${wf.name}"
+                th:data-workflow="${wf.name}"
+                onclick="switchWorkflow(this)">
+        </button>
+        <a th:href="@{'/agents-ui/compare/' + ${agent.name}}" class="btn btn-sm btn-secondary" style="margin-left:auto;">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M9.573.677 7.177 3.073a.25.25 0 0 0 .177.427h2.896a2.25 2.25 0 0 1 0 4.5H7v-1.5h3.25a.75.75 0 0 0 0-1.5H7.354a1.75 1.75 0 0 1-1.237-.513L3.573 2.073A1.75 1.75 0 0 0 2.336 1.5H.75a.75.75 0 0 0 0 1.5h1.586a.25.25 0 0 1 .177.073l2.544 2.544A3.25 3.25 0 0 0 7.354 6.5h2.896a2.25 2.25 0 0 1 0 4.5H7V9.5h3.25a.75.75 0 0 0 0-1.5H7.354a3.25 3.25 0 0 1-2.297-.953L2.513 4.503a.25.25 0 0 0-.177-.073H.75a.75.75 0 0 1 0-1.5h1.586c.464 0 .909.184 1.237.513l2.544 2.544a1.75 1.75 0 0 0 1.237.513h2.896a2.25 2.25 0 0 0 0-4.5H7v1.5h3.25a.75.75 0 0 1 0 1.5H7.354a3.25 3.25 0 0 1-2.297-.953L2.513 1.003A1.75 1.75 0 0 0 1.276.25H.75A.75.75 0 0 1 .75-.5h.526"/></svg>
+            Compare
+        </a>
+    </div>
+
+    <!-- DAG Container -->
+    <div class="detail-section">
+        <h3>
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.5 1.75a.75.75 0 0 0-1.5 0V5H1.75a.75.75 0 0 0 0 1.5H5v3.25a.75.75 0 0 0 1.5 0V6.5h3.25a.75.75 0 0 0 0-1.5H6.5V1.75Z"/></svg>
+            Workflow Graph
+        </h3>
+        <div class="dag-container" id="dag-container">
+            <div class="dag-toolbar">
+                <button onclick="dagRenderer.zoomIn()" title="Zoom in">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 4a.75.75 0 0 1 .75.75v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5A.75.75 0 0 1 8 4Z"/></svg>
+                </button>
+                <button onclick="dagRenderer.zoomOut()" title="Zoom out">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M3.75 7.25a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Z"/></svg>
+                </button>
+                <button onclick="dagRenderer.resetZoom()" title="Reset zoom">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z"/></svg>
+                </button>
+            </div>
+            <svg id="dag-svg"></svg>
+            <div class="dag-tooltip" id="dag-tooltip"></div>
+        </div>
+    </div>
+
+    <!-- Execution Panel -->
+    <div class="exec-panel" id="exec-panel" th:if="${props.testing.enabled}">
+        <h3>
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"/></svg>
+            Test Agent
+        </h3>
+        <div class="exec-input-group">
+            <textarea id="exec-input" placeholder="Enter input to test this agent..."></textarea>
+            <button id="exec-run-btn" class="btn btn-primary" onclick="executeAgent()">
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"/></svg>
+                Run
+            </button>
+        </div>
+        <div class="exec-status" id="exec-status" style="display:none;">
+            <div class="spinner" id="exec-spinner"></div>
+            <span id="exec-status-label">Running...</span>
+        </div>
+        <div class="exec-output" id="exec-output" style="display:none;"></div>
+        <div class="node-results" id="node-results"></div>
+    </div>
+
+    <!-- Workflow data (JSON, rendered by JS) -->
+    <script th:inline="javascript">
+        const agentName = /*[[${agent.name}]]*/ '';
+        const agentWorkflows = /*[[${agent.workflows}]]*/ [];
+        let currentWorkflowIndex = 0;
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <script th:src="@{/agents-ui/js/dag-renderer.js}"></script>
+    <script th:src="@{/agents-ui/js/websocket-client.js}"></script>
+    <script th:src="@{/agents-ui/js/execution-panel.js}"></script>
+    <script>
+        let dagRenderer;
+
+        function switchWorkflow(btn) {
+            document.querySelectorAll('.workflow-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            const wfName = btn.dataset.workflow;
+            currentWorkflowIndex = agentWorkflows.findIndex(w => w.name === wfName);
+            renderCurrentWorkflow();
+        }
+
+        function renderCurrentWorkflow() {
+            const wf = agentWorkflows[currentWorkflowIndex];
+            if (!dagRenderer) {
+                dagRenderer = new DagRenderer('dag-svg', 'dag-tooltip');
+            }
+            dagRenderer.render(wf);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCurrentWorkflow();
+        });
+    </script>
+</div>
+</body>
+</html>
+

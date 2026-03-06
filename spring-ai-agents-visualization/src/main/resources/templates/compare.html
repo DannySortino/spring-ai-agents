@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page('Compare: ' + ${agent.name}, 'dashboard', ~{::content})}">
+<body>
+<div th:fragment="content">
+    <div class="page-header">
+        <h2>
+            <a th:href="@{'/agents-ui/agent/' + ${agent.name}}" style="color:var(--text-muted);text-decoration:none;">&larr;</a>
+            Compare Workflows — <span th:text="${agent.name}" style="font-family:var(--font-mono)">agent</span>
+        </h2>
+        <p>Side-by-side structural comparison of workflows</p>
+    </div>
+
+    <div class="compare-container" id="compare-container">
+        <!-- Panels rendered by JS -->
+    </div>
+
+    <!-- Legend -->
+    <div style="margin-top:16px;display:flex;gap:20px;font-size:13px;color:var(--text-secondary);">
+        <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Shared nodes</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:var(--orange);border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Unique to left</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:var(--purple);border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Unique to right</span>
+    </div>
+
+    <script th:inline="javascript">
+        const compareAgent = /*[[${agent}]]*/ {};
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script th:src="@{/agents-ui/js/dag-renderer.js}"></script>
+    <script th:src="@{/agents-ui/js/comparison-view.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => renderComparison(compareAgent));
+    </script>
+</div>
+</body>
+</html>
+

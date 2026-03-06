@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: spring-ai-agents-sample
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:local-api-key}
+      base-url: ${OPENAI_BASE_URL:http://localhost:1234/v1}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:local-model}
+          temperature: 0.7
+    agents:
+      reactive: false
+      mcp-server:
+        enabled: true
+    mcp:
+      server:
+        enabled: true
+
+server:
+  port: 8086
+
+logging:
+  level:
+    com.springai.agents: DEBUG
+    org.springframework.ai: DEBUG
+

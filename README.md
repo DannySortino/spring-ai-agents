@@ -1,316 +1,554 @@
-# Spring AI Agent Platform
+# Spring AI Agents Framework
 
-A powerful, configuration-driven platform for building sophisticated AI agents with complex workflow patterns, MCP (Model Context Protocol) integration, and advanced dependency management.
+A programmatic framework for building AI agent workflows as validated DAGs (Directed Acyclic Graphs), built on **Spring Boot 3.2.5**, **Java 21**, and **Spring AI 1.0.0**.
 
-## 🚀 Quick Start
+Users implement the `Agent` interface to define workflows of typed nodes (LLM, REST, Tool, Context). The framework auto-discovers agents, builds their DAGs, executes them with parallel fan-out, and optionally exposes them as MCP server tools.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  You implement Agent (@Component)                                │
+│      └── buildWorkflow(builder) → Validated DAG                  │
+│                                                                  │
+│  Framework auto-discovers agents                                 │
+│      ├── Wraps in AgentRuntime (sync) or ReactiveAgentRuntime    │
+│      ├── Registers in AgentRegistry                              │
+│      ├── Exposes as MCP tools (optional)                         │
+│      └── Visualization UI at /agents-ui (optional)               │
+│                                                                  │
+│  WorkflowExecutor runs nodes level-by-level                      │
+│      ├── Parallel execution via CompletableFuture                │
+│      ├── NodeHooks fire beforeExecute / afterExecute             │
+│      └── ErrorStrategy handles failures per-node                 │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Multi-Module Structure
+
+| Module | Artifact | Purpose |
+|--------|----------|---------|
+| `spring-ai-agents-starter` | `spring-ai-agents-starter` | Core framework — nodes, executors, workflow engine, auto-config |
+| `spring-ai-agents-visualization` | `spring-ai-agents-visualization` | Web UI for visualizing workflow DAGs and real-time execution monitoring |
+| `spring-ai-agents-sample` | `spring-ai-agents-sample` | Working sample application with example agents |
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
-- Java 17 or higher
-- Maven 3.6+
-- OpenAI API key (or compatible LLM provider)
+- **Java 21** or higher
+- **Maven 3.8+**
+- An LLM provider (OpenAI, or a local server like LM Studio at `http://localhost:1234`)
 
-### Installation
+### 1. Build the Project
 
-1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd spring-ai-agents
-```
-
-2. Set your OpenAI API key:
-```bash
-export OPENAI_API_KEY=your-api-key-here
-```
-
-3. Build and run:
-```bash
 mvn clean install
-mvn spring-boot:run
 ```
 
-The application will start on `http://localhost:8080` by default.
+### 2. Add Dependencies
 
-## 🏗️ Architecture Overview
+For a new Spring Boot application, add the starter to your `pom.xml`:
 
-The Spring AI Agent Platform is built around a **unified graph-based workflow system** that supports:
+```xml
+<dependency>
+    <groupId>com.springai</groupId>
+    <artifactId>spring-ai-agents-starter</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
 
-- **Graph Workflows**: Complex dependency management with arbitrary node relationships (A→B, B→C, A→C)
-- **Orchestrator Workflows**: Manager-worker patterns with specialized agents
-- **Routing Workflows**: Content-based request routing to different handlers
-- **Parallel Execution**: Independent nodes execute concurrently when dependencies are satisfied
-- **MCP Integration**: Model Context Protocol for external tool integration
+To also get the visualization dashboard, add:
 
-## 📋 Key Features
+```xml
+<dependency>
+    <groupId>com.springai</groupId>
+    <artifactId>spring-ai-agents-visualization</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
 
-### Workflow Types
+### 3. Implement an Agent
 
-| Type | Description | Use Cases |
-|------|-------------|-----------|
-| **Graph** | Dependency-based execution with parallel processing | Complex data pipelines, multi-step analysis |
-| **Orchestrator** | Manager coordinates specialized workers | Enterprise workflows, role-based processing |
-| **Routing** | Content-based request routing | Multi-purpose agents, request classification |
+Create a `@Component` that implements `Agent`:
 
-### Advanced Capabilities
+```java
+@Component
+public class GreetingAgent implements Agent {
 
-- ✅ **Cycle Detection**: Prevents infinite loops in workflow graphs
-- ✅ **Topological Sorting**: Automatic execution order determination  
-- ✅ **Context Management**: Fine-grained control over data flow between steps
-- ✅ **Conditional Logic**: If/then/else branching within workflows
-- ✅ **Tool Integration**: MCP-based external tool calling
-- ✅ **Retry Mechanisms**: Configurable retry strategies with exponential backoff
-- ✅ **Parallel Processing**: Concurrent execution of independent workflow nodes
+    @Override
+    public String getName() { return "greeting-agent"; }
 
-## 📖 Documentation
+    @Override
+    public String getDescription() { return "Greets the user warmly"; }
 
-### Configuration Guides
-- **[Configuration Guide](docs/CONFIGURATION_GUIDE.md)** - Comprehensive configuration reference
-- **[Input/Output Node Requirements](docs/INPUT_OUTPUT_NODE_REQUIREMENTS.md)** - **REQUIRED**: New mandatory workflow structure
-- **[MCP Client Setup](docs/MCP_CLIENT_SETUP_GUIDE.md)** - Model Context Protocol integration
-- **[MCP Troubleshooting](docs/MCP_TROUBLESHOOTING_GUIDE.md)** - Common MCP issues and solutions
+    @Override
+    public Workflow buildWorkflow(WorkflowBuilder builder) {
+        var input = InputNode.builder().id("input").build();
 
-### Examples
-- **[Basic Configuration](docs/examples/basic-application.yml)** - Simple getting-started examples
-- **[Comprehensive Examples](docs/examples/comprehensive-agents-example.yml)** - Advanced agent configurations
-- **[Graph Workflow Examples](docs/examples/graph-workflow-example.yml)** - Complex dependency patterns
+        var greet = LlmNode.builder()
+                .id("greet")
+                .promptTemplate("Generate a warm, personalized greeting for: {input}")
+                .systemPrompt("You are a friendly greeter.")
+                .build();
 
-### Development
-- **[Tasks & Roadmap](docs/tasks.md)** - Development tasks and future enhancements
+        var output = OutputNode.builder().id("output").build();
 
-## 🔧 Configuration
+        return builder
+                .name("greet")
+                .description("Generates a personalized greeting")
+                .nodes(input, greet, output)
+                .edge(input, greet)
+                .edge(greet, output)
+                .build();
+    }
+}
+```
 
-### Minimal Configuration
+### 4. Configure
 
-Create your `application.yml`:
+`application.yml`:
 
 ```yaml
 spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
+      # For local models (LM Studio, Ollama, etc.):
+      # base-url: http://localhost:1234/v1
+      # chat:
+      #   options:
+      #     model: local-model
+    agents:
+      reactive: false           # true for reactive (Mono/Flux) mode
+      mcp-server:
+        enabled: false          # true to expose agents as MCP tools
 
-# IMPORTANT: All agents MUST include both 'input_node' and 'output_node'
-# See docs/INPUT_OUTPUT_NODE_REQUIREMENTS.md for details
-agents:
-  list:
-    - name: myAgent
-      systemPrompt: "You are a helpful assistant."
-      workflow:
-        type: graph
-        chain:
-          # REQUIRED: input_node - entry point for user requests
-          - nodeId: "input_node"
-            prompt: "Receive user request: {input}"
-          - nodeId: "response"
-            dependsOn: ["input_node"]
-            prompt: "Respond to: {input_node}"
-          # REQUIRED: output_node - final result returned to user
-          - nodeId: "output_node"
-            dependsOn: ["response"]
-            prompt: "Present response: {response}"
-```
+server:
+  port: 8086
 
-### Advanced Graph Workflow Examples
-
-#### Complex Dependencies with Parallel Processing
-```yaml
-app:
-  agents:
-    - name: analysisAgent
-      model: openai
-      system-prompt: "You are a data analysis expert."
-      workflow:
-        type: graph
-        chain:
-          # Root node
-          - nodeId: "extract_data"
-            prompt: "Extract key data from: {input}"
-          
-          # Parallel analysis
-          - nodeId: "statistical_analysis"
-            dependsOn: ["extract_data"]
-            prompt: "Analyze statistics: {extract_data}"
-          
-          - nodeId: "trend_analysis"
-            dependsOn: ["extract_data"]
-            prompt: "Identify trends: {extract_data}"
-          
-          # Synthesis with multiple dependencies
-          - nodeId: "final_report"
-            dependsOn: ["statistical_analysis", "trend_analysis"]
-            prompt: "Generate report: {statistical_analysis} + {trend_analysis}"
-```
-
-#### Conditional Logic (If/Then/Else Branching)
-```yaml
-app:
-  agents:
-    - name: smartAgent
-      model: openai
-      system-prompt: "You are an intelligent assistant with conditional logic."
-      workflow:
-        type: graph
-        chain:
-          - nodeId: "priority_router"
-            conditional:
-              condition:
-                type: CONTAINS
-                field: "input"
-                value: "urgent"
-                ignoreCase: true
-              thenStep:
-                prompt: "URGENT: Immediate attention required for: {input}"
-                tool: "emergencyTool"
-              elseStep:
-                prompt: "Standard processing for: {input}"
-```
-
-#### Orchestrator Pattern (Manager-Worker-Synthesizer)
-```yaml
-app:
-  agents:
-    - name: orchestratorAgent
-      model: openai
-      system-prompt: "You are a project manager coordinating specialists."
-      workflow:
-        type: orchestrator
-        manager-prompt: "Analyze request and assign to specialists: {input}"
-        workers:
-          - name: "technical-specialist"
-            workflow:
-              type: graph
-              chain:
-                - nodeId: "tech_analysis"
-                  prompt: "Technical analysis: {input}"
-          - name: "business-analyst"
-            workflow:
-              type: graph
-              chain:
-                - nodeId: "business_analysis"
-                  prompt: "Business analysis: {input}"
-        synthesizer-prompt: "Combine technical and business insights: {workerResults}"
-```
-
-#### Routing Pattern (Content-Based Routing)
-```yaml
-app:
-  agents:
-    - name: routingAgent
-      model: openai
-      system-prompt: "You are a smart routing assistant."
-      workflow:
-        type: routing
-        routes:
-          technical:
-            prompt: "Handle technical issue: {input}"
-            tool: "technicalSupportTool"
-          billing:
-            prompt: "Handle billing inquiry: {input}"
-            tool: "billingTool"
-          general:
-            prompt: "Provide general assistance: {input}"
-```
-
-## 🛠️ API Usage
-
-### REST Endpoints
-
-- `POST /agents/{agentName}/invoke` - Execute an agent workflow
-- `GET /agents` - List all configured agents
-- `GET /agents/{agentName}` - Get agent details
-
-### Example Request
-
-```bash
-curl -X POST http://localhost:8080/agents/myAgent/invoke \
-  -H "Content-Type: application/json" \
-  -d '{"input": "Analyze the quarterly sales data"}'
-```
-
-## 🔌 MCP Integration
-
-The platform supports Model Context Protocol for external tool integration:
-
-```yaml
-spring:
-  ai:
-    mcp:
-      client:
-        enabled: true
-        connections:
-          dataserver:
-            url: http://localhost:8080
-            sse-endpoint: /mcp/sse
-```
-
-See the [MCP Setup Guide](docs/MCP_CLIENT_SETUP_GUIDE.md) for detailed configuration.
-
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-# All tests
-mvn test
-
-# Specific test class
-mvn test -Dtest=GraphWorkflowTest
-
-# Integration tests
-mvn test -Dtest=*IntegrationTest
-```
-
-## 📊 Monitoring
-
-The platform includes Spring Boot Actuator endpoints:
-
-- `/actuator/health` - Application health status
-- `/actuator/metrics` - Application metrics
-- `/actuator/info` - Application information
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Agent not found**: Check agent name in configuration
-2. **Workflow cycles**: Review dependencies for circular references
-3. **MCP connection issues**: See [MCP Troubleshooting Guide](docs/MCP_TROUBLESHOOTING_GUIDE.md)
-
-### Debug Mode
-
-Enable debug logging:
-
-```yaml
 logging:
   level:
-    com.springai.agent: DEBUG
-    org.springframework.ai: DEBUG
+    com.springai.agents: DEBUG
 ```
 
-## 🤝 Contributing
+### 5. Run
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+```bash
+mvn spring-boot:run -pl spring-ai-agents-sample
+```
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Related Resources
-
-- **[Spring AI Documentation](https://docs.spring.io/spring-ai/reference/)** - Core Spring AI framework
-- **[Model Context Protocol](https://modelcontextprotocol.io/)** - MCP specification
-- **[OpenAI API Documentation](https://platform.openai.com/docs)** - OpenAI API reference
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](../../issues)
-- **Discussions**: [GitHub Discussions](../../discussions)
-- **Documentation**: [docs/](docs/) directory
+That's it — the framework auto-discovers your `@Component` agent, builds and validates the DAG, and registers it. If the visualization module is on the classpath, browse to `http://localhost:8086/agents-ui/` to see the dashboard.
 
 ---
 
-**Built with ❤️ using Spring AI and the Model Context Protocol**
+## Node Types
+
+All nodes extend the `Node` base class (which provides `hooks` and `config`) and are built with Lombok `@Value @SuperBuilder`.
+
+| Type | Purpose | Key Fields |
+|------|---------|------------|
+| `InputNode` | Entry point — receives raw user input | `id` |
+| `OutputNode` | Exit point — returns final result | `id`, `postProcessPrompt`, `outputHandler` |
+| `LlmNode` | Sends interpolated prompt to LLM | `id`, `promptTemplate`, `systemPrompt` |
+| `RestNode` | Executes HTTP REST call | `id`, `url`, `method`, `bodyTemplate`, `bodyProvider`, `headers`, `timeout` |
+| `ContextNode` | Injects static text into the workflow | `id`, `contextText` |
+| `ToolNode` | Calls an MCP tool by name | `id`, `toolName`, `guidance` |
+
+### Placeholder Interpolation
+
+Templates use `{nodeId}` to reference the output of an upstream dependency node, and `{input}` for the raw user input:
+
+```java
+LlmNode.builder()
+    .id("summarize")
+    .promptTemplate("Summarize the following analysis:\n\n{analyze}")
+    .build();
+```
+
+### Builder Examples
+
+```java
+// Input — every workflow needs at least one
+InputNode.builder().id("input").build();
+
+// LLM call with system prompt
+LlmNode.builder()
+    .id("analyze")
+    .promptTemplate("Analyze: {input}")
+    .systemPrompt("You are a data analyst.")
+    .build();
+
+// HTTP REST call with headers and timeout
+RestNode.builder()
+    .id("fetch")
+    .url("https://api.example.com/data?q={input}")
+    .method(HttpMethod.GET)
+    .header("Authorization", "Bearer my-token")
+    .timeout(Duration.ofSeconds(10))
+    .build();
+
+// Static context injection
+ContextNode.builder()
+    .id("rules")
+    .contextText("Always be concise. Cite sources.")
+    .build();
+
+// MCP tool call
+ToolNode.builder()
+    .id("search")
+    .toolName("web_search")
+    .guidance("Search for information about the user's query")
+    .build();
+
+// Output — pass-through
+OutputNode.builder().id("output").build();
+
+// Output — with LLM post-processing
+OutputNode.builder()
+    .id("output")
+    .postProcessPrompt("Format this as a markdown report: {analyze}")
+    .build();
+
+// Output — with custom handler
+OutputNode.builder()
+    .id("output")
+    .outputHandler(ctx -> {
+        String data = ctx.getDependencyResult("analyze", String.class);
+        return "## Report\n\n" + data.toUpperCase();
+    })
+    .build();
+```
+
+---
+
+## Workflow Patterns
+
+Nodes and edges are defined separately in the builder. Use node-reference edges (type-safe) to prevent typos:
+
+### Sequential
+
+```
+input → A → B → output
+```
+
+```java
+var input = InputNode.builder().id("input").build();
+var a = LlmNode.builder().id("A").promptTemplate("Step 1: {input}").build();
+var b = LlmNode.builder().id("B").promptTemplate("Step 2: {A}").build();
+var output = OutputNode.builder().id("output").build();
+
+builder.nodes(input, a, b, output)
+       .edge(input, a).edge(a, b).edge(b, output)
+       .build();
+```
+
+### Parallel Fan-Out / Fan-In
+
+Nodes `A` and `B` run concurrently, both feed into `output`:
+
+```
+         ┌── A ──┐
+input ───┤       ├─── output
+         └── B ──┘
+```
+
+```java
+builder.nodes(input, a, b, output)
+       .edge(input, a).edge(input, b)
+       .edge(a, output).edge(b, output)
+       .build();
+```
+
+### Diamond
+
+```
+         ┌── A ──┐
+input ───┤       ├── C ── output
+         └── B ──┘
+```
+
+```java
+builder.nodes(input, a, b, c, output)
+       .edge(input, a).edge(input, b)
+       .edge(a, c).edge(b, c)
+       .edge(c, output)
+       .build();
+```
+
+### Multi-Workflow Agent
+
+Override `buildWorkflows()` to return multiple workflows. The framework uses a `WorkflowRouter` (LLM-based by default) to select the best workflow for each incoming request:
+
+```java
+@Component
+public class SmartAgent implements Agent {
+
+    @Override
+    public String getName() { return "smart-agent"; }
+
+    @Override
+    public String getDescription() { return "Routes to best workflow"; }
+
+    @Override
+    public List<Workflow> buildWorkflows() {
+        return List.of(
+            buildExtractionWorkflow(),
+            buildAnalysisWorkflow()
+        );
+    }
+
+    private Workflow buildExtractionWorkflow() {
+        var input = InputNode.builder().id("input").build();
+        var extract = LlmNode.builder().id("extract")
+                .promptTemplate("Extract key data points from: {input}").build();
+        var output = OutputNode.builder().id("output").build();
+
+        return WorkflowBuilder.create()
+                .name("extract")
+                .description("Extracts key data points and facts from text")
+                .nodes(input, extract, output)
+                .edge(input, extract).edge(extract, output)
+                .build();
+    }
+
+    private Workflow buildAnalysisWorkflow() {
+        // ... similar pattern
+    }
+}
+```
+
+---
+
+## Node Hooks & Error Handling
+
+### Lifecycle Hooks
+
+All nodes support optional lifecycle hooks via `NodeHooks`:
+
+```java
+NodeHooks hooks = NodeHooks.builder()
+    .beforeExecute(ctx -> log.info("Starting with: {}", ctx.getResolvedInput()))
+    .afterExecute((ctx, result) -> log.info("Produced: {}", result))
+    .build();
+
+LlmNode.builder().id("analyze").promptTemplate("...").hooks(hooks).build();
+```
+
+### Per-Node Error Handling
+
+All nodes support optional error handling via `NodeConfig`:
+
+```java
+NodeConfig config = NodeConfig.builder()
+    .errorStrategy(ErrorStrategy.CONTINUE_WITH_DEFAULT)
+    .defaultValue("fallback value")
+    .build();
+
+LlmNode.builder()
+    .id("analyze")
+    .promptTemplate("...")
+    .hooks(hooks)      // lifecycle hooks (optional)
+    .config(config)    // error handling (optional)
+    .build();
+```
+
+| Strategy | Behavior |
+|----------|----------|
+| `FAIL_FAST` (default) | Exception propagates immediately |
+| `CONTINUE_WITH_DEFAULT` | Stores the `defaultValue` and continues |
+| `SKIP` | Skips the node entirely; downstream sees absent result |
+
+---
+
+## Typed Node Results
+
+Node results are stored as `Object`, not just `String`. Access typed results:
+
+```java
+// In an outputHandler:
+Integer count = ctx.getDependencyResult("counter", Integer.class);
+MyPojo data = ctx.getDependencyResult("fetch", MyPojo.class);
+
+// From WorkflowResult:
+WorkflowResult result = runtime.invokeWithResult("input text");
+Integer calc = result.getNodeResult("calc", Integer.class);
+```
+
+---
+
+## REST Node Body Provider
+
+Send typed POJOs as REST request bodies:
+
+```java
+RestNode.builder()
+    .id("submit")
+    .url("https://api.example.com/submit")
+    .method(HttpMethod.POST)
+    .bodyProvider(deps -> {
+        MyData data = (MyData) deps.get("extract");
+        return new SubmitRequest(data.getId(), data.getName());
+    })
+    .build();
+```
+
+---
+
+## Workflow Events
+
+Subscribe to lifecycle events with `@EventListener`:
+
+```java
+@EventListener
+public void onNodeCompleted(NodeCompletedEvent event) {
+    log.info("Node '{}' completed in {}ms in workflow '{}'",
+            event.getNodeId(), event.getDurationMs(), event.getWorkflowName());
+}
+```
+
+| Event | Published When |
+|-------|---------------|
+| `WorkflowStartedEvent` | Workflow execution begins |
+| `NodeStartedEvent` | Individual node starts |
+| `NodeCompletedEvent` | Individual node finishes |
+| `WorkflowCompletedEvent` | Entire workflow finishes |
+
+---
+
+## Custom Node Types
+
+Create custom nodes by extending `Node` + a matching `NodeExecutor<T>`:
+
+```java
+// 1. Define the node (immutable data)
+@Value
+@SuperBuilder
+@EqualsAndHashCode(callSuper = false)
+public class MyCustomNode extends Node {
+    @NonNull String id;
+    String customField;
+}
+
+// 2. Create the executor (Spring bean — auto-registered)
+@Component
+public class MyCustomExecutor implements NodeExecutor<MyCustomNode> {
+    @Override
+    public Object execute(MyCustomNode node, NodeContext ctx) {
+        return "Custom result for: " + node.getCustomField();
+    }
+
+    @Override
+    public Class<MyCustomNode> getNodeType() {
+        return MyCustomNode.class;
+    }
+}
+```
+
+---
+
+## Retry Support
+
+Built-in retry with configurable backoff strategies:
+
+```java
+RetryConfig config = RetryConfig.builder()
+    .strategy(RetryStrategy.EXPONENTIAL_RANDOM)
+    .maxAttempts(5)
+    .initialDelayMs(500)
+    .maxDelayMs(30000)
+    .multiplier(3.0)
+    .build();
+```
+
+| Strategy | Description |
+|----------|-------------|
+| `NONE` | No retries |
+| `FIXED_DELAY` | Same delay between each retry |
+| `LINEAR` | Delay increases linearly |
+| `EXPONENTIAL` | Delay doubles each retry |
+| `EXPONENTIAL_RANDOM` | Exponential with random jitter |
+| `RANDOM` | Random delay between min/max |
+
+Presets: `RetryConfig.DEFAULT` (3 attempts, exponential, 1s→10s) and `RetryConfig.NONE`.
+
+---
+
+## MCP Integration
+
+### MCP Server — Expose Agents as Tools
+
+Set `spring.ai.agents.mcp-server.enabled=true`. Each agent is auto-exposed as a callable MCP tool via `AgentToolCallbackProvider`. No manual registration needed.
+
+### MCP Client — Call External Tools
+
+Configure `spring.ai.mcp.client` to connect to external MCP servers. Use `ToolNode` in workflows to call external tools by name.
+
+---
+
+## Configuration Reference
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `spring.ai.agents.reactive` | `false` | Use reactive execution mode (`Mono<String>`) |
+| `spring.ai.agents.parallel-threads` | `0` | Thread pool size for parallel nodes (0 = cached) |
+| `spring.ai.agents.mcp-server.enabled` | `false` | Expose agents as MCP tools |
+| `spring.ai.agents.visualization.enabled` | `true` | Enable visualization dashboard (requires viz module) |
+
+All executor beans use `@ConditionalOnMissingBean` — provide your own `@Bean` of any executor type to override the default.
+
+---
+
+## Running the Sample Application
+
+The `spring-ai-agents-sample` module includes two example agents:
+
+| Agent | Type | Workflow Pattern |
+|-------|------|-----------------|
+| `research-agent` | Single-workflow | Parallel fan-out (factual + analysis + guidelines → output) |
+| `data-processor` | Multi-workflow | Two sequential workflows (extract / analyze) with LLM routing |
+
+```bash
+# Build everything
+mvn clean install
+
+# Run the sample
+mvn spring-boot:run -pl spring-ai-agents-sample
+
+# Or with a specific LLM provider
+OPENAI_API_KEY=sk-xxx mvn spring-boot:run -pl spring-ai-agents-sample
+```
+
+The sample runs on `http://localhost:8086`.
+
+---
+
+## Visualization Dashboard
+
+See **[spring-ai-agents-visualization/README.md](spring-ai-agents-visualization/README.md)** for the full visualization guide, including setup, features, and configuration options.
+
+**Quick start:** Add the `spring-ai-agents-visualization` dependency and browse to `/agents-ui/`.
+
+---
+
+## Testing
+
+```bash
+# Run all tests
+mvn test
+
+# Run only starter tests
+mvn test -pl spring-ai-agents-starter
+
+# Run specific test class
+mvn test -pl spring-ai-agents-starter -Dtest=WorkflowExecutorTest
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+

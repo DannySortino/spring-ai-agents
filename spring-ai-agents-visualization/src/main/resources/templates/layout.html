@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, activePage, content)">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${title} + ' — Spring AI Agents'">Spring AI Agents</title>
+    <link rel="stylesheet" th:href="@{/agents-ui/css/styles.css}"/>
+    <script th:src="@{/agents-ui/js/theme.js}"></script>
+</head>
+<body>
+<div class="app-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <div>
+                <h1>Agents UI</h1>
+                <small>Spring AI Agents</small>
+            </div>
+        </div>
+        <div class="sidebar-nav">
+            <a th:href="@{/agents-ui/}" class="nav-item" th:classappend="${activePage == 'dashboard'} ? 'active'">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1.75a.75.75 0 0 0-1.5 0V5H1.75a.75.75 0 0 0 0 1.5H5v3.25a.75.75 0 0 0 1.5 0V6.5h3.25a.75.75 0 0 0 0-1.5H6.5V1.75Z"/><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75Z"/></svg>
+                Dashboard
+            </a>
+            <a th:href="@{/agents-ui/history}" class="nav-item" th:classappend="${activePage == 'history'} ? 'active'">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.643 3.143.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684ZM7.75 4a.75.75 0 0 1 .75.75v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5A.75.75 0 0 1 7.75 4Z"/></svg>
+                History
+            </a>
+            <a th:href="@{/agents-ui/analytics}" class="nav-item" th:classappend="${activePage == 'analytics'} ? 'active'">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z"/></svg>
+                Analytics
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <button id="theme-toggle" class="theme-toggle" type="button">
+                <svg viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M9.598 1.591a.749.749 0 0 1 .785-.175 7.001 7.001 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.22-7.832Z"/></svg>
+                Dark
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main content area — replaced per page -->
+    <main class="main-content">
+        <div th:replace="${content}"></div>
+    </main>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page('Dashboard', 'dashboard', ~{::content})}">
+<body>
+<div th:fragment="content">
+    <div class="page-header">
+        <h2>Agent Registry
+            <span class="badge badge-accent" th:text="${#lists.size(agents)} + ' agents'">0 agents</span>
+        </h2>
+        <p>Browse and test registered AI agents</p>
+    </div>
+
+    <!-- Live activity ticker -->
+    <div class="live-ticker" id="live-ticker">
+        <span class="live-dot inactive" id="live-dot"></span>
+        <span id="live-label">No active executions</span>
+    </div>
+
+    <div class="agent-grid" th:if="${!#lists.isEmpty(agents)}">
+        <a th:each="agent : ${agents}"
+           th:href="@{'/agents-ui/agent/' + ${agent.name}}"
+           class="agent-card">
+            <div class="agent-card-header">
+                <span class="agent-card-name" th:text="${agent.name}">agent-name</span>
+                <span class="badge badge-purple" th:if="${agent.multiWorkflow}">Multi-Workflow</span>
+            </div>
+            <div class="agent-card-desc" th:text="${agent.description}">Agent description</div>
+            <div class="agent-card-meta">
+                <span class="meta-item">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1.75a.75.75 0 0 0-1.5 0V5H1.75a.75.75 0 0 0 0 1.5H5v3.25a.75.75 0 0 0 1.5 0V6.5h3.25a.75.75 0 0 0 0-1.5H6.5V1.75Z"/></svg>
+                    <span th:text="${agent.workflowCount} + ' workflow(s)'">1 workflow(s)</span>
+                </span>
+                <span class="meta-item">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM4 8a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z"/></svg>
+                    <span th:text="${agent.invocationCount} + ' runs'">0 runs</span>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <div class="empty-state" th:if="${#lists.isEmpty(agents)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+        <h3>No agents registered</h3>
+        <p>Implement the Agent interface and annotate with @Component to get started.</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <script th:src="@{/agents-ui/js/websocket-client.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ws = new AgentsWebSocket();
+            ws.connect();
+            let activeCount = 0;
+            const dot = document.getElementById('live-dot');
+            const label = document.getElementById('live-label');
+
+            ws.onEvent((event) => {
+                if (event.eventType === 'WORKFLOW_STARTED') {
+                    activeCount++;
+                } else if (event.eventType === 'WORKFLOW_COMPLETED') {
+                    activeCount = Math.max(0, activeCount - 1);
+                }
+                if (activeCount > 0) {
+                    dot.classList.remove('inactive');
+                    label.textContent = activeCount + ' execution(s) running';
+                } else {
+                    dot.classList.add('inactive');
+                    label.textContent = 'No active executions';
+                }
+            });
+        });
+    </script>
+</div>
+</body>
+</html>
+
