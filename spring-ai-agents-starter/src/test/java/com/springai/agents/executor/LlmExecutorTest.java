@@ -6,12 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +28,26 @@ class LlmExecutorTest {
         ChatModel chatModel = mock(ChatModel.class);
         Generation generation = new Generation(new AssistantMessage(response));
         ChatResponse chatResponse = new ChatResponse(List.of(generation));
+        when(chatModel.call(any(Prompt.class))).thenReturn(chatResponse);
+        return chatModel;
+    }
+
+    private ChatModel mockChatModelWithUsage(String response, long promptTokens, long completionTokens) {
+        ChatModel chatModel = mock(ChatModel.class);
+        Generation generation = new Generation(new AssistantMessage(response));
+        
+        Usage usage = mock(Usage.class);
+        when(usage.getPromptTokens()).thenReturn(promptTokens);
+        when(usage.getCompletionTokens()).thenReturn(completionTokens);
+        when(usage.getTotalTokens()).thenReturn(promptTokens + completionTokens);
+        
+        ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+        when(metadata.getUsage()).thenReturn(usage);
+        
+        ChatResponse chatResponse = mock(ChatResponse.class);
+        when(chatResponse.getResult()).thenReturn(generation);
+        when(chatResponse.getMetadata()).thenReturn(metadata);
+        
         when(chatModel.call(any(Prompt.class))).thenReturn(chatResponse);
         return chatModel;
     }
@@ -127,9 +148,58 @@ class LlmExecutorTest {
 
         var captor = org.mockito.ArgumentCaptor.forClass(Prompt.class);
         verify(chatModel).call(captor.capture());
-        String sentPrompt = captor.getValue().getContents();
-        assertTrue(sentPrompt.contains("first-result"));
-        assertTrue(sentPrompt.contains("second-result"));
+        
+        // Get the user message text from instructions
+        List<Message> messages = captor.getValue().getInstructions();
+        assertEquals(1, messages.size());
+        String userMessageText = messages.get(0).getText();
+        assertTrue(userMessageText.contains("first-result"));
+        assertTrue(userMessageText.contains("second-result"));
+    }
+
+    @Test
+    @DisplayName("extracts and stores usage metadata when available")
+    void extractsUsageMetadata() {
+        ChatModel chatModel = mockChatModelWithUsage("response", 100, 50);
+        var executor = new LlmExecutor(chatModel);
+        var node = LlmNode.builder()
+                .id("analyze")
+                .promptTemplate("Test prompt")
+                .build();
+        var executionContext = new ConcurrentHashMap<String, Object>();
+        var ctx = NodeContext.builder()
+                .resolvedInput("")
+                .executionContext(executionContext)
+                .build();
+
+        executor.execute(node, ctx);
+
+        // Verify usage was stored in execution context
+        assertTrue(executionContext.containsKey("analyze_usage"), "Usage should be stored in context");
+        Usage storedUsage = (Usage) executionContext.get("analyze_usage");
+        assertEquals(100L, storedUsage.getPromptTokens());
+        assertEquals(50L, storedUsage.getCompletionTokens());
+        assertEquals(150L, storedUsage.getTotalTokens());
+    }
+
+    @Test
+    @DisplayName("handles unmodifiable execution context gracefully")
+    void handlesUnmodifiableContext() {
+        ChatModel chatModel = mockChatModelWithUsage("response", 100, 50);
+        var executor = new LlmExecutor(chatModel);
+        var node = LlmNode.builder()
+                .id("analyze")
+                .promptTemplate("Test prompt")
+                .build();
+        // Use unmodifiable map - should not throw
+        var ctx = NodeContext.builder()
+                .resolvedInput("")
+                .executionContext(Map.of())
+                .build();
+
+        // Should not throw despite unmodifiable map
+        Object result = executor.execute(node, ctx);
+        assertEquals("response", result);
     }
 
     @Test

@@ -38,16 +38,25 @@ public class LlmExecutor implements NodeExecutor<LlmNode>, ReactiveNodeExecutor<
         ChatResponse response = chatModel.call(prompt);
         
         // Log usage metadata if available
-        if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
-            var usage = response.getMetadata().getUsage();
+        var metadata = response.getMetadata();
+        if (metadata != null && metadata.getUsage() != null) {
+            var usage = metadata.getUsage();
             log.debug("LlmNode '{}': tokens used — input={}, output={}, total={}",
                     node.getId(),
                     usage.getPromptTokens(),
                     usage.getCompletionTokens(),
                     usage.getTotalTokens());
             
-            // Store usage in execution context for downstream access
-            context.getExecutionContext().put(node.getId() + "_usage", usage);
+            // Store usage in execution context for downstream access, if possible
+            try {
+                context.getExecutionContext().put(node.getId() + "_usage", usage);
+            } catch (UnsupportedOperationException ex) {
+                // Execution context may be backed by an unmodifiable map (e.g. Map.of()); skip storing usage
+                log.trace("LlmNode '{}': execution context is unmodifiable; skipping usage storage", node.getId());
+            } catch (Exception ex) {
+                // Avoid failing node execution due to unexpected context issues
+                log.warn("LlmNode '{}': failed to store usage metadata in execution context", node.getId(), ex);
+            }
         }
         
         return response.getResult().getOutput().getText();

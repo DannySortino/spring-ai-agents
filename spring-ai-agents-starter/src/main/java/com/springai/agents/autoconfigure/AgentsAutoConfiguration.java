@@ -126,7 +126,7 @@ public class AgentsAutoConfiguration {
     // ── Workflow Executors ──────────────────────────────────────────────
 
     @Bean(destroyMethod = "shutdown")
-    @ConditionalOnMissingBean(name = "workflowThreadPool")
+    @ConditionalOnMissingBean({WorkflowExecutor.class, ExecutorService.class})
     @ConditionalOnProperty(name = "spring.ai.agents.reactive", havingValue = "false", matchIfMissing = true)
     public ExecutorService workflowThreadPool(AgentsProperties properties) {
         ExecutorService threadPool = properties.getParallelThreads() > 0
