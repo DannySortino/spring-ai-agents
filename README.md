@@ -107,7 +107,49 @@ public class GreetingAgent implements Agent {
 }
 ```
 
-### 3b. Or Define Agents with YAML (No Code!)
+### 3b. Or Describe Agents in Plain English (Zero Code!)
+
+The ultimate no-code experience — just write what you want in a markdown file:
+
+**`src/main/resources/agent-specs/customer-support.md`**:
+
+```markdown
+# Customer Support Agent
+
+This agent handles customer inquiries for our e-commerce platform.
+
+## What it should do
+
+1. First, analyze the customer's message to understand:
+   - Their sentiment (happy, frustrated, neutral)
+   - The type of inquiry (order status, refund, product question)
+
+2. Based on the analysis:
+   - For order status: Look up the order and provide status
+   - For refunds: Check eligibility and process or escalate
+   - For product questions: Provide helpful information
+
+3. Always:
+   - Be polite and professional
+   - Apologize if the customer is frustrated
+   - Offer to escalate to a human if needed
+
+## Tone
+Friendly but professional. Use the customer's name if available.
+```
+
+Enable in `application.yml`:
+```yaml
+spring:
+  ai:
+    agents:
+      natural:
+        enabled: true
+```
+
+The framework uses an LLM to automatically generate the agent workflow from your requirements!
+
+### 3c. Or Define Agents with YAML (Low Code)
 
 For simple to moderately complex agents, you can define them entirely in YAML — no Java code required:
 
