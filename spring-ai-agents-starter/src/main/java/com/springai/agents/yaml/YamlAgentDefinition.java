@@ -102,15 +102,12 @@ public class YamlAgentDefinition {
         /** Tool name for tool nodes. */
         private String toolName;
         
-        /** Tool arguments template for tool nodes. */
-        private String toolArgs;
+        /** Guidance for the LLM when constructing tool calls. */
+        private String guidance;
         
         // Context node properties
-        /** Context key for context nodes. */
-        private String contextKey;
-        
-        /** Context value for context nodes. */
-        private String contextValue;
+        /** Static text content for context nodes. */
+        private String contextText;
         
         // Error handling
         /** Error strategy: FAIL_FAST, CONTINUE_WITH_DEFAULT, SKIP */

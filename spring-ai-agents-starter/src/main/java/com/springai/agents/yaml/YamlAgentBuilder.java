@@ -5,9 +5,11 @@ import com.springai.agents.node.*;
 import com.springai.agents.workflow.Workflow;
 import com.springai.agents.workflow.WorkflowBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Builds {@link Agent} instances from {@link YamlAgentDefinition} configurations.
@@ -104,26 +106,30 @@ public class YamlAgentBuilder {
                     .config(config)
                     .build();
                     
-            case "rest" -> RestNode.builder()
-                    .id(nodeDef.getId())
-                    .method(nodeDef.getMethod() != null ? nodeDef.getMethod() : "GET")
-                    .urlTemplate(nodeDef.getUrl())
-                    .bodyTemplate(nodeDef.getBody())
-                    .headers(nodeDef.getHeaders())
-                    .config(config)
-                    .build();
+            case "rest" -> {
+                    var restBuilder = RestNode.builder()
+                            .id(nodeDef.getId())
+                            .method(HttpMethod.valueOf(nodeDef.getMethod() != null ? nodeDef.getMethod().toUpperCase() : "GET"))
+                            .url(nodeDef.getUrl())
+                            .bodyTemplate(nodeDef.getBody())
+                            .config(config);
+                    Map<String, String> headers = nodeDef.getHeaders();
+                    if (headers != null) {
+                        headers.forEach(restBuilder::header);
+                    }
+                    yield restBuilder.build();
+                }
                     
             case "tool" -> ToolNode.builder()
                     .id(nodeDef.getId())
                     .toolName(nodeDef.getToolName())
-                    .argumentsTemplate(nodeDef.getToolArgs())
+                    .guidance(nodeDef.getGuidance())
                     .config(config)
                     .build();
                     
             case "context" -> ContextNode.builder()
                     .id(nodeDef.getId())
-                    .contextKey(nodeDef.getContextKey())
-                    .contextValue(nodeDef.getContextValue())
+                    .contextText(nodeDef.getContextText())
                     .config(config)
                     .build();
                     

@@ -203,8 +203,8 @@ YAML agents are automatically discovered from `classpath:agents/*.yaml` at start
 - `output` — Final output node
 - `llm` — LLM call with `prompt` and optional `systemPrompt`
 - `rest` — HTTP call with `method`, `url`, `body`, `headers`
-- `tool` — Tool/function call with `toolName` and `toolArgs`
-- `context` — Set context variables with `contextKey` and `contextValue`
+- `tool` — Tool/function call with `toolName` and `guidance`
+- `context` — Inject static text with `contextText`
 
 **Error handling:**
 ```yaml

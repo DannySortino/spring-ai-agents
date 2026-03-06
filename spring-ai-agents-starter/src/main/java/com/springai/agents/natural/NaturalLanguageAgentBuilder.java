@@ -66,16 +66,16 @@ public class NaturalLanguageAgentBuilder {
         1. Every workflow MUST have exactly one 'input' node and one 'output' node
         2. Use 'llm' nodes for any AI/language processing tasks
         3. Use 'rest' nodes for API calls
-        4. Use 'context' nodes to store intermediate values
+        4. Use 'context' nodes to inject static text
         5. Connect nodes with edges to form a DAG (no cycles)
         6. Nodes can run in parallel if they don't depend on each other
         7. Use clear, descriptive node IDs
         8. Write effective prompts that accomplish each step
         
-        Output ONLY valid YAML, no explanation or markdown code blocks.
+        Output ONLY valid YAML. Do not include any explanation, commentary, or markdown code fences.
         
-        Schema:
-        ```yaml
+        Schema (for reference only - do not include in output):
+        
         name: agent-name
         description: What the agent does
         workflows:
@@ -90,8 +90,9 @@ public class NaturalLanguageAgentBuilder {
                 systemPrompt: "Optional system prompt for LLM nodes"
                 method: "GET|POST for REST nodes"
                 url: "URL template for REST nodes"
-                contextKey: "For context nodes"
-                contextValue: "For context nodes"
+                toolName: "For tool nodes"
+                guidance: "For tool nodes - guides LLM input mapping"
+                contextText: "For context nodes - static text to inject"
                 errorStrategy: "FAIL_FAST|CONTINUE_WITH_DEFAULT|SKIP"
                 defaultValue: "Fallback value"
               - id: output
@@ -99,7 +100,6 @@ public class NaturalLanguageAgentBuilder {
             edges:
               - from: source-node
                 to: target-node
-        ```
         """;
 
     /**

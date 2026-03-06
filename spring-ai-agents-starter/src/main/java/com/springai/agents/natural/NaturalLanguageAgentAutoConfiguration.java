@@ -60,9 +60,9 @@ public class NaturalLanguageAgentAutoConfiguration {
 
     @Bean
     public NaturalLanguageAgentBuilder naturalLanguageAgentBuilder(
-            @Lazy ChatModel chatModel,
-            YamlAgentBuilder yamlBuilder) {
-        return new NaturalLanguageAgentBuilder(chatModel, yamlBuilder);
+            @Lazy ChatModel chatModel) {
+        // Instantiate YamlAgentBuilder directly to avoid dependency on yaml.enabled
+        return new NaturalLanguageAgentBuilder(chatModel, new YamlAgentBuilder());
     }
 
     @Bean
