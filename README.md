@@ -107,6 +107,114 @@ public class GreetingAgent implements Agent {
 }
 ```
 
+### 3b. Or Describe Agents in Plain English (Zero Code!)
+
+The ultimate no-code experience — just write what you want in a markdown file:
+
+**`src/main/resources/agent-specs/customer-support.md`**:
+
+```markdown
+# Customer Support Agent
+
+This agent handles customer inquiries for our e-commerce platform.
+
+## What it should do
+
+1. First, analyze the customer's message to understand:
+   - Their sentiment (happy, frustrated, neutral)
+   - The type of inquiry (order status, refund, product question)
+
+2. Based on the analysis:
+   - For order status: Look up the order and provide status
+   - For refunds: Check eligibility and process or escalate
+   - For product questions: Provide helpful information
+
+3. Always:
+   - Be polite and professional
+   - Apologize if the customer is frustrated
+   - Offer to escalate to a human if needed
+
+## Tone
+Friendly but professional. Use the customer's name if available.
+```
+
+Enable in `application.yml`:
+```yaml
+spring:
+  ai:
+    agents:
+      natural:
+        enabled: true
+```
+
+The framework uses an LLM to automatically generate the agent workflow from your requirements!
+
+### 3c. Or Define Agents with YAML (Low Code)
+
+For simple to moderately complex agents, you can define them entirely in YAML — no Java code required:
+
+**`src/main/resources/agents/customer-support.yaml`**:
+
+```yaml
+name: customer-support
+description: Handles customer inquiries with sentiment analysis
+
+workflows:
+  - name: support-flow
+    description: Analyze sentiment and generate response
+    
+    nodes:
+      - id: input
+        type: input
+        
+      - id: analyze-sentiment
+        type: llm
+        prompt: |
+          Analyze the sentiment of: {input}
+          Respond with: positive, negative, or neutral
+        systemPrompt: You are a sentiment analyzer.
+        
+      - id: generate-response
+        type: llm
+        prompt: |
+          Sentiment: {analyze-sentiment}
+          Customer message: {input}
+          Generate a helpful response.
+        systemPrompt: You are a friendly support agent.
+        
+      - id: output
+        type: output
+        
+    edges:
+      - from: input
+        to: analyze-sentiment
+      - from: input
+        to: generate-response
+      - from: analyze-sentiment
+        to: generate-response
+      - from: generate-response
+        to: output
+```
+
+YAML agents are automatically discovered from `classpath:agents/*.yaml` at startup.
+
+**Supported node types:**
+- `input` — Entry point for user input
+- `output` — Final output node
+- `llm` — LLM call with `prompt` and optional `systemPrompt`
+- `rest` — HTTP call with `method`, `url`, `body`, `headers`
+- `tool` — Tool/function call with `toolName` and `guidance`
+- `context` — Inject static text with `contextText`
+
+**Error handling:**
+```yaml
+- id: risky-node
+  type: llm
+  prompt: "..."
+  errorStrategy: CONTINUE_WITH_DEFAULT  # or FAIL_FAST, SKIP
+  defaultValue: "Fallback response"
+```
+
 ### 4. Configure
 
 `application.yml`:

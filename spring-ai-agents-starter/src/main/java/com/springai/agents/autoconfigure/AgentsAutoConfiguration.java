@@ -148,21 +148,39 @@ public class AgentsAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "spring.ai.agents.reactive", havingValue = "false", matchIfMissing = true)
-    public AgentRegistry syncAgentRegistry(List<Agent> agents, WorkflowExecutor workflowExecutor,
+    public AgentRegistry syncAgentRegistry(ObjectProvider<Agent> individualAgents,
+                                           ObjectProvider<List<Agent>> agentCollections,
+                                           WorkflowExecutor workflowExecutor,
                                            WorkflowRouter workflowRouter) {
-        log.info("Discovering {} Agent beans (sync mode)", agents.size());
-        Map<String, AgentRuntime> runtimeMap = buildSyncRuntimes(agents, workflowExecutor, workflowRouter);
+        List<Agent> allAgents = collectAllAgents(individualAgents, agentCollections);
+        log.info("Discovering {} Agent beans (sync mode)", allAgents.size());
+        Map<String, AgentRuntime> runtimeMap = buildSyncRuntimes(allAgents, workflowExecutor, workflowRouter);
         return AgentRegistry.ofSync(runtimeMap);
     }
 
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "spring.ai.agents.reactive", havingValue = "true")
-    public AgentRegistry reactiveAgentRegistry(List<Agent> agents, ReactiveWorkflowExecutor workflowExecutor,
+    public AgentRegistry reactiveAgentRegistry(ObjectProvider<Agent> individualAgents,
+                                                ObjectProvider<List<Agent>> agentCollections,
+                                                ReactiveWorkflowExecutor workflowExecutor,
                                                 WorkflowRouter workflowRouter) {
-        log.info("Discovering {} Agent beans (reactive mode)", agents.size());
-        Map<String, ReactiveAgentRuntime> runtimeMap = buildReactiveRuntimes(agents, workflowExecutor, workflowRouter);
+        List<Agent> allAgents = collectAllAgents(individualAgents, agentCollections);
+        log.info("Discovering {} Agent beans (reactive mode)", allAgents.size());
+        Map<String, ReactiveAgentRuntime> runtimeMap = buildReactiveRuntimes(allAgents, workflowExecutor, workflowRouter);
         return AgentRegistry.ofReactive(runtimeMap);
+    }
+
+    /**
+     * Collects all agents from both individual Agent beans and List&lt;Agent&gt; collection beans.
+     * This handles agents registered via YAML/natural-language auto-configuration.
+     */
+    private List<Agent> collectAllAgents(ObjectProvider<Agent> individualAgents,
+                                          ObjectProvider<List<Agent>> agentCollections) {
+        List<Agent> allAgents = new ArrayList<>();
+        individualAgents.forEach(allAgents::add);
+        agentCollections.forEach(allAgents::addAll);
+        return allAgents;
     }
 
     // ── MCP Integration ─────────────────────────────────────────────────
